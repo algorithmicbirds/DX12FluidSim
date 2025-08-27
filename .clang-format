@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+SortIncludes: false
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 120
+AlignArrayOfStructures: Left
+BreakBeforeBraces: Allman
+BinPackArguments: false
+BinPackParameters: false
+AlignAfterOpenBracket: BlockIndent
+Cpp11BracedListStyle: true
+AccessModifierOffset: -4
