@@ -1,5 +1,4 @@
 #pragma once
-
 #include "GlobInclude/WinInclude.hpp"
 
 class Window
@@ -9,21 +8,32 @@ public:
     ~Window();
     Window(const Window &) = delete;
     Window &operator=(const Window &) = delete;
-    ATOM WindowClass = 0;
+
     void Update();
 
-    inline bool ShouldClose() { return bShouldClose; }
-    inline bool ShouldResize() { return bShouldResize; }
-    void ClearResizeFlags();
+    bool ShouldClose() const { return bShouldClose; }
+    bool ShouldResize() const { return bShouldResize; }
+    void ClearResizeFlags() { bShouldResize = false; }
+
     HWND GetHwnd() const { return Hwnd; }
+    void SetFullScreen(bool EnableFullScreen);
+    void FullScreenFlipFlop();
 
 private:
     bool Init();
     void ShutDown();
-    static LRESULT CALLBACK OnWindowMessage(HWND Hwnd, UINT MSG, WPARAM WParam, LPARAM LParam);
+    static LRESULT CALLBACK StaticWindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
+    LRESULT WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam);
 
 private:
-    HWND Hwnd;
-    static bool bShouldClose;
-    static bool bShouldResize;
+    HWND Hwnd = nullptr;
+    ATOM WindowClass = 0;
+    RECT SavedWindowRect{};
+
+    static inline bool bShouldClose = false;
+    static inline bool bShouldResize = false;
+    static inline bool bIsFullScreenEnabled = false;
+
+    DWORD DefaultStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    DWORD EXDefaultStyle = WS_EX_APPWINDOW;
 };
