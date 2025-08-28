@@ -3,6 +3,7 @@
 
 
 bool Window::bShouldClose = false;
+bool Window::bShouldResize = false;
 
 Window::Window() { Init(); }
 
@@ -71,15 +72,23 @@ void Window::Update()
     }
 }
 
-LRESULT Window::OnWindowMessage(HWND Window, UINT MSG, WPARAM WParam, LPARAM LParam)
+void Window::ClearResizeFlags() { Window::bShouldResize = false; }
+
+LRESULT Window::OnWindowMessage(HWND Hwnd, UINT MSG, WPARAM WParam, LPARAM LParam)
 {
     switch (MSG)
     {
     case WM_CLOSE:
         Window::bShouldClose = true;
         break;
+    case WM_SIZE:
+        if (WParam != SIZE_MINIMIZED)
+        {
+            Window::bShouldResize = true;
+        }
+        break;
     default:
         break;
     }
-    return DefWindowProc(Window, MSG, WParam, LParam);
+    return DefWindowProc(Hwnd, MSG, WParam, LParam);
 }

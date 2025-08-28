@@ -17,11 +17,18 @@ int main(int argc, char **argv)
     while (!Window.ShouldClose())
     {
         Window.Update();
+        if (Window.ShouldResize())
+        {
+            Context.Flush(SwapChain.GetFrameCount());
+            SwapChain.Resize();
+            Window.ClearResizeFlags();
+            std::cout << "window should resize\n";
+        }
         ID3D12CommandList *CmdList = Context.InitCmdList();
         Context.DispatchCmdList();
         SwapChain.Present();
     }
 
-    SwapChain.Flush(SwapChain.GetFrameCount());
+    Context.Flush(SwapChain.GetFrameCount());
     return 0;
 }

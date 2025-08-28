@@ -104,3 +104,11 @@ void DXContext::DispatchCmdList()
     CommandQueue->ExecuteCommandLists(1, Lists);
     SignalAndWait();
 }
+
+void DXContext::Flush(size_t count)
+{
+    for (size_t i = 0; i < count; i++)
+    {
+        SignalAndWait();
+    }
+}

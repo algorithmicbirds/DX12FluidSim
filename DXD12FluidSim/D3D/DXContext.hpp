@@ -19,6 +19,7 @@ public:
     void SignalAndWait();
     ID3D12GraphicsCommandList1 *InitCmdList();
     void DispatchCmdList();
+    void Flush(size_t count);
 
 private:
     bool Init();

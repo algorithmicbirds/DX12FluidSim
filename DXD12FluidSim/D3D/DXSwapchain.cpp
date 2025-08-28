@@ -1,10 +1,10 @@
 #include "D3D/DXSwapchain.hpp"
 #include "D3D/DXContext.hpp"
+#include "Window/Window.hpp"
 
 DXSwapChain::DXSwapChain(DXContext &Context, HWND Hwnd) : ContextRef(Context), HwndRef(Hwnd) { Init(); }
 
 DXSwapChain::~DXSwapChain() {}
-
 
 bool DXSwapChain::Init()
 {
@@ -22,7 +22,6 @@ bool DXSwapChain::Init()
     SwapchainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
     SwapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
-    
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC FSwapChainDesc{};
     FSwapChainDesc.Windowed = true;
 
@@ -30,7 +29,12 @@ bool DXSwapChain::Init()
 
     IDXGIFactory7 *Factory = ContextRef.GetDXGIFactory();
     Factory->CreateSwapChainForHwnd(
-        ContextRef.GetCommandQueue(), HwndRef, &SwapchainDesc, &FSwapChainDesc, nullptr, SwapChain1.GetAddressOf()
+        ContextRef.GetCommandQueue(),
+        HwndRef,
+        &SwapchainDesc,
+        &FSwapChainDesc,
+        nullptr,
+        SwapChain1.GetAddressOf()
     );
     if (FAILED(SwapChain1->QueryInterface(IID_PPV_ARGS(&SwapChain3))))
     {
@@ -42,13 +46,22 @@ bool DXSwapChain::Init()
 
 void DXSwapChain::Present() { SwapChain3->Present(1, 0); }
 
-void DXSwapChain::Flush(size_t count)
+void DXSwapChain::ShutDown() { SwapChain3.Reset(); }
+
+void DXSwapChain::Resize()
 {
-    for (size_t i = 0; i < count; i++)
+    RECT cr;
+    if (GetClientRect(HwndRef, &cr))
     {
-        ContextRef.SignalAndWait();
+        Height = cr.bottom - cr.top;
+        Width = cr.right - cr.left;
+
+        SwapChain3->ResizeBuffers(
+            GetFrameCount(),
+            Width,
+            Height,
+            DXGI_FORMAT_UNKNOWN,
+            DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING
+        );
     }
 }
-
-
-void DXSwapChain::ShutDown() { SwapChain3.Reset(); }

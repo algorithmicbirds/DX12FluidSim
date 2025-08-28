@@ -3,6 +3,7 @@
 #include "GlobInclude/WinInclude.hpp"
 
 class DXContext;
+class Window;
 
 class DXSwapChain
 {
@@ -16,7 +17,7 @@ public:
 public:
     void Present();
     static constexpr size_t GetFrameCount() { return 3; }
-    void Flush(size_t count);
+    void Resize();
 
 private:
     bool Init();
@@ -25,5 +26,7 @@ private:
 private:
     DXContext &ContextRef;
     ComPtr<IDXGISwapChain3> SwapChain3;
-    HWND &HwndRef;
+    HWND HwndRef;
+    UINT Height = 1080;
+    UINT Width = 1920;
 };
