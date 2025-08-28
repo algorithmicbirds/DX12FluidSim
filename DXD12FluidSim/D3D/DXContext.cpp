@@ -1,4 +1,4 @@
-#include "D32D/DXContext.hpp"
+#include "D3D/DXContext.hpp"
 #include <stdexcept>
 
 DXContext::DXContext()
@@ -13,15 +13,22 @@ DXContext::~DXContext() { ShutDown(); }
 
 bool DXContext::Init()
 {
+    if (FAILED(CreateDXGIFactory2(0, IID_PPV_ARGS(&DXGIFactory))))
+    {
+        return false;
+    }
+
     if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&Device))))
     {
         return false;
     }
+
     D3D12_COMMAND_QUEUE_DESC CmdQueueDesc{};
     CmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     CmdQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
     CmdQueueDesc.NodeMask = 0;
     CmdQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+
     if (FAILED(Device->CreateCommandQueue(&CmdQueueDesc, IID_PPV_ARGS(&CommandQueue))))
     {
         return false;
@@ -31,7 +38,9 @@ bool DXContext::Init()
     {
         return false;
     }
+
     FenceEvent = CreateEvent(nullptr, false, false, nullptr);
+    
     if (!FenceEvent)
     {
         return false;
@@ -62,6 +71,7 @@ void DXContext::ShutDown()
     Fence.Reset();
     CommandQueue.Reset();
     Device.Reset();
+    DXGIFactory.Reset();
 }
 
 void DXContext::SignalAndWait()

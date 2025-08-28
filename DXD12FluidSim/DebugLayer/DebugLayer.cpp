@@ -26,24 +26,7 @@ bool DebugLayer::Init()
 void DebugLayer::ShutDown()
 {
 #ifdef _DEBUG
-    ComPtr<IDXGIInfoQueue> infoQueue;
-    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&infoQueue))))
-    {
-        UINT64 numMessages = infoQueue->GetNumStoredMessages(DXGI_DEBUG_ALL);
-        for (UINT64 i = 0; i < numMessages; ++i)
-        {
-            SIZE_T messageLength = 0;
-            infoQueue->GetMessage(DXGI_DEBUG_ALL, i, nullptr, &messageLength);
-            std::vector<char> bytes(messageLength);
-            DXGI_INFO_QUEUE_MESSAGE *msg = reinterpret_cast<DXGI_INFO_QUEUE_MESSAGE *>(bytes.data());
-            infoQueue->GetMessage(DXGI_DEBUG_ALL, i, msg, &messageLength);
-            std::wcout << L"[DXGI] " << msg->pDescription << L"\n";
-        }
-        std::wcout << L"=== End of Report ===\n";
-        infoQueue->ClearStoredMessages(DXGI_DEBUG_ALL);
-    }
-    DXGIDebug.Reset();
-    D3D12Debug.Reset();
+    ReportLiveObjects();
 #endif
 }
 
@@ -57,5 +40,23 @@ void DebugLayer::ReportLiveObjects()
     DXGIDebug->ReportLiveObjects(
         DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)
     );
+
+    ComPtr<IDXGIInfoQueue> infoQueue;
+    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&infoQueue))))
+    {
+        UINT64 numMessages = infoQueue->GetNumStoredMessages(DXGI_DEBUG_ALL);
+        for (UINT64 i = 0; i < numMessages; ++i)
+        {
+            SIZE_T len = 0;
+            infoQueue->GetMessage(DXGI_DEBUG_ALL, i, nullptr, &len);
+            std::vector<char> bytes(len);
+            auto *msg = reinterpret_cast<DXGI_INFO_QUEUE_MESSAGE *>(bytes.data());
+            infoQueue->GetMessage(DXGI_DEBUG_ALL, i, msg, &len);
+            std::wcout << L"[DXGI] " << msg->pDescription << L"\n";
+        }
+        infoQueue->ClearStoredMessages(DXGI_DEBUG_ALL);
+    }
+
+    std::wcout << L"=== End of Report ===\n";
 #endif
 }

@@ -13,6 +13,7 @@ public:
     inline ID3D12Device *GetDevice() const { return Device.Get(); }
     inline ID3D12CommandQueue *GetCommandQueue() const { return CommandQueue.Get(); }
     inline ID3D12Fence *GetFence() const { return Fence.Get(); }
+    inline IDXGIFactory7 *GetDXGIFactory() const { return DXGIFactory.Get(); }
 
 public:
     void SignalAndWait();
@@ -29,6 +30,7 @@ private:
     ComPtr<ID3D12Fence1> Fence;
     ComPtr<ID3D12CommandAllocator> CmdAlloc;
     ComPtr<ID3D12GraphicsCommandList1> CmdList;
+    ComPtr<IDXGIFactory7> DXGIFactory;
     HANDLE FenceEvent = nullptr;
     UINT64 FenceValue = 0;
 };

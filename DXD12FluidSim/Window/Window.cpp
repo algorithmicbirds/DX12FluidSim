@@ -31,7 +31,7 @@ bool Window::Init()
 
     //constexpr wchar_t WindowTitle[] = "DX12 FluidSim";
 
-    WindowHandle = CreateWindowExW(
+    Hwnd = CreateWindowExW(
         WS_EX_OVERLAPPEDWINDOW | WS_EX_APPWINDOW,
         wcexw.lpszClassName,
         L"DX12 Fluid Sim",
@@ -51,9 +51,9 @@ bool Window::Init()
 
 void Window::ShutDown()
 {
-    if (WindowHandle)
+    if (Hwnd)
     {
-        DestroyWindow(WindowHandle);
+        DestroyWindow(Hwnd);
     }
     if (WindowClass)
     {
@@ -64,7 +64,7 @@ void Window::ShutDown()
 void Window::Update()
 {
     MSG msg;
-    while (PeekMessageW(&msg, WindowHandle, 0, 0, PM_REMOVE))
+    while (PeekMessageW(&msg, Hwnd, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);

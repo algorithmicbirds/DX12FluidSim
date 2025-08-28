@@ -13,15 +13,14 @@ public:
     void Update();
 
     inline bool ShouldClose() { return bShouldClose; }
-
+    HWND GetHwnd() const { return Hwnd; }
 
 private:
     bool Init();
     void ShutDown();
-    HWND WindowHandle;
+    HWND Hwnd;
     static LRESULT CALLBACK OnWindowMessage(HWND Window, UINT MSG, WPARAM WParam, LPARAM LParam);
 
 private:
     static bool bShouldClose;
-    
 };
