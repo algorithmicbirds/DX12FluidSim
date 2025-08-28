@@ -21,7 +21,7 @@ file(GLOB_RECURSE MY_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/DXD1
 
 add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES} ${MY_HEADERS})
 
-target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC GLFW_INCLUDE_NONE=1) 
+target_compile_definitions("${CMAKE_PROJECT_NAME}" PRIVATE UNICODE _UNICODE) 
 
 if(MSVC) # If using the VS compiler...
 
