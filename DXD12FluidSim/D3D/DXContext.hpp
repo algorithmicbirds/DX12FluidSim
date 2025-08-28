@@ -17,7 +17,7 @@ public:
 
 public:
     void SignalAndWait();
-    ID3D12GraphicsCommandList1 *InitCmdList();
+    ID3D12GraphicsCommandList7 *InitCmdList();
     void DispatchCmdList();
     void Flush(size_t count);
 
@@ -30,7 +30,7 @@ private:
     ComPtr<ID3D12CommandQueue> CommandQueue;
     ComPtr<ID3D12Fence1> Fence;
     ComPtr<ID3D12CommandAllocator> CmdAlloc;
-    ComPtr<ID3D12GraphicsCommandList1> CmdList;
+    ComPtr<ID3D12GraphicsCommandList7> CmdList;
     ComPtr<IDXGIFactory7> DXGIFactory;
     HANDLE FenceEvent = nullptr;
     UINT64 FenceValue = 0;

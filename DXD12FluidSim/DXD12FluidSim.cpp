@@ -4,6 +4,8 @@
 #include "D3D/DXContext.hpp"
 #include "D3D/DXSwapchain.hpp"
 #include "Window/Window.hpp"
+#include "Renderer/Renderer.hpp"
+#include "DebugLayer/DebugMacros.hpp"
 
 int main(int argc, char **argv)
 {
@@ -13,22 +15,27 @@ int main(int argc, char **argv)
 
     DXContext Context;
     Window Window;
-    DXSwapChain SwapChain{Context, Window.GetHwnd()};
+    DXSwapchain Swapchain{Context, Window.GetHwnd()};
+    
+    Renderer Renderer{Swapchain, *Context.GetDevice()};
+    //Renderer.Init();
     while (!Window.ShouldClose())
     {
         Window.Update();
         if (Window.ShouldResize())
         {
-            Context.Flush(SwapChain.GetFrameCount());
-            SwapChain.Resize();
+            Context.Flush(Swapchain.GetFrameCount());
+            Swapchain.Resize();
             Window.ClearResizeFlags();
-            std::cout << "window should resize\n";
         }
-        ID3D12CommandList *CmdList = Context.InitCmdList();
+
+        ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList();
+        Renderer.BeginFrame(CmdList);
+        Renderer.EndFrame(CmdList);
         Context.DispatchCmdList();
-        SwapChain.Present();
+        Swapchain.Present();
     }
 
-    Context.Flush(SwapChain.GetFrameCount());
+    Context.Flush(Swapchain.GetFrameCount());
     return 0;
 }

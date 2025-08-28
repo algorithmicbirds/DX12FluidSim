@@ -3,7 +3,7 @@
 #include("${CMAKE_CURRENT_SOURCE_DIR}/Scripts/CompileShaders.cmake")
 
 set(CMAKE_CXX_STANDARD 17)
-option(PRODUCTION_BUILD "Make this a production build" OFF)
+option(PRODUCTION_BUILD "Make this a production build" ON)
 
 
 # Enable Hot Reload for MSVC compilers if supported.
@@ -28,7 +28,7 @@ target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC _CRT_SECURE_NO_WARNING
 
 if(PRODUCTION_BUILD)
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC SHADER_PATH="./Resources/CompiledShaders/")
-	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup") #no console
+	set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup") #no console
 
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=1) 
 
@@ -44,4 +44,4 @@ endif()
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/DXD12FluidSim" ${Vulkan_INCLUDE_DIRS})
 
 
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE dxgi dxguid d3d12)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE dxgi dxguid d3d12)

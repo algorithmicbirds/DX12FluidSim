@@ -1,12 +1,17 @@
 #include "D3D/DXSwapchain.hpp"
 #include "D3D/DXContext.hpp"
 #include "Window/Window.hpp"
+#include <stdexcept>
+#include <string>
+#include <iostream>
 
-DXSwapChain::DXSwapChain(DXContext &Context, HWND Hwnd) : ContextRef(Context), HwndRef(Hwnd) { Init(); }
+#include "DebugLayer/DebugMacros.hpp"
 
-DXSwapChain::~DXSwapChain() {}
+DXSwapchain::DXSwapchain(DXContext &Context, HWND Hwnd) : ContextRef(Context), HwndRef(Hwnd) { Init(); }
 
-bool DXSwapChain::Init()
+DXSwapchain::~DXSwapchain() {}
+
+bool DXSwapchain::Init()
 {
     DXGI_SWAP_CHAIN_DESC1 SwapchainDesc{};
     SwapchainDesc.Width = 1920;
@@ -28,28 +33,50 @@ bool DXSwapChain::Init()
     ComPtr<IDXGISwapChain1> SwapChain1;
 
     IDXGIFactory7 *Factory = ContextRef.GetDXGIFactory();
+    VALIDATE_PTR(Factory);
     Factory->CreateSwapChainForHwnd(
-        ContextRef.GetCommandQueue(),
-        HwndRef,
-        &SwapchainDesc,
-        &FSwapChainDesc,
-        nullptr,
-        SwapChain1.GetAddressOf()
+        ContextRef.GetCommandQueue(), HwndRef, &SwapchainDesc, &FSwapChainDesc, nullptr, SwapChain1.GetAddressOf()
     );
-    if (FAILED(SwapChain1->QueryInterface(IID_PPV_ARGS(&SwapChain3))))
-    {
-        return false;
-    }
+
+    DX_VALIDATE(SwapChain1->QueryInterface(IID_PPV_ARGS(&SwapChain3)), SwapChain3);
+
+
+    GetBuffers();
 
     return true;
 }
 
-void DXSwapChain::Present() { SwapChain3->Present(1, 0); }
-
-void DXSwapChain::ShutDown() { SwapChain3.Reset(); }
-
-void DXSwapChain::Resize()
+void DXSwapchain::Present()
 {
+    SwapChain3->Present(1, 0);
+}
+
+void DXSwapchain::ShutDown()
+{
+    ReleaseBuffers();
+    SwapChain3.Reset();
+}
+
+bool DXSwapchain::GetBuffers()
+{
+    for (size_t i = 0; i < FrameCount; ++i)
+    {
+        DX_VALIDATE(SwapChain3->GetBuffer(i, IID_PPV_ARGS(&Buffers[i])), Buffers[i]);
+    }
+    return true;
+}
+
+void DXSwapchain::ReleaseBuffers()
+{
+    for (size_t i = 0; i < FrameCount; ++i)
+    {
+        Buffers[i].Reset();
+    }
+}
+
+void DXSwapchain::Resize()
+{
+    ReleaseBuffers();
     RECT cr;
     if (GetClientRect(HwndRef, &cr))
     {
@@ -64,4 +91,5 @@ void DXSwapChain::Resize()
             DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING
         );
     }
+    GetBuffers();
 }
