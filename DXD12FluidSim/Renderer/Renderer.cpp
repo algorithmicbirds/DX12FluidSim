@@ -1,19 +1,18 @@
 #include "Renderer/Renderer.hpp"
 #include "D3D/DXSwapchain.hpp"
 #include "DebugLayer/DebugMacros.hpp"
+#include "D3D/DXPipeline.hpp"
 
 Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
+    // Pipeline = std::make_unique<DXPipeline>();
     Init();
 }
 Renderer::~Renderer() { ReleaseRTVHeaps(); }
 
 void Renderer::Init()
 {
-    CreateRTVAndDescHeap(); 
-    ComPtr<ID3D12Resource2> VertexBuffer =
-        CreateVertexBuffer(1024, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-    VALIDATE_PTR(VertexBuffer.Get());
+    CreateRTVAndDescHeap();
 }
 
 void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
@@ -86,6 +85,22 @@ void Renderer::CreateRTVAndDescHeap()
     }
 }
 
+void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList) {
+  
+    UINT VertexBufferSize = sizeof(TriangleVertices);
+    VertexBuffer_Default =
+        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COPY_DEST);
+    VertexBuffer_Upload =
+        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+ 
+    Vertex *mappedData = nullptr;
+    VertexBuffer_Upload->Map(0, nullptr, reinterpret_cast<void **>(&mappedData));
+    memcpy(mappedData, TriangleVertices, sizeof(TriangleVertices));
+    VertexBuffer_Upload->Unmap(0, nullptr);
+
+    CmdList->CopyBufferRegion(VertexBuffer_Default.Get(), 0, VertexBuffer_Upload.Get(), 0, VertexBufferSize);
+}
+
 void Renderer::ReleaseRTVHeaps()
 {
     RTVDescHeap.Reset();
@@ -125,4 +140,15 @@ ComPtr<ID3D12Resource2> Renderer::CreateVertexBuffer(
         Buffer
     );
     return Buffer;
+}
+
+void Renderer::BindInputAssembler(ID3D12GraphicsCommandList7 *CmdList)
+{
+    D3D12_VERTEX_BUFFER_VIEW VBV{};
+    VBV.BufferLocation = VertexBuffer_Default->GetGPUVirtualAddress();
+    VBV.SizeInBytes = sizeof(TriangleVertices);
+    VBV.StrideInBytes = sizeof(Vertex);
+    CmdList->IASetVertexBuffers(0, 1, &VBV);
+    CmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    CmdList->DrawInstanced(_countof(TriangleVertices), 1, 0, 0);
 }

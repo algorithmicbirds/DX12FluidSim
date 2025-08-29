@@ -2,7 +2,9 @@
 
 #include "GlobInclude/WinInclude.hpp"
 #include <vector>
+#include "D3D/Vertex.hpp"
 
+class DXPipeline;
 class DXSwapchain;
 
 class Renderer
@@ -17,6 +19,8 @@ public:
     void BeginFrame(ID3D12GraphicsCommandList7 *CmdList);
     void EndFrame(ID3D12GraphicsCommandList7 *CmdList);
     void CreateRTVAndDescHeap();
+    void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
+    void BindInputAssembler(ID3D12GraphicsCommandList7 *CmdList);
 
 private:
     void Init();
@@ -31,4 +35,19 @@ private:
     ID3D12Device &DeviceRef;
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
+
+    //Gpu Only Buffer
+    ComPtr<ID3D12Resource2> VertexBuffer_Default;
+
+    //CPU Visible Buffer
+    ComPtr<ID3D12Resource2> VertexBuffer_Upload;
+    //std::unique_ptr<DXPipeline> Pipeline;
+    //UINT VertexBufferSize = 1024;
+
+      Vertex TriangleVertices[3] = {
+        {-1.0f, -1.0f},
+        {-1.0f, 0.0f },
+        {0.0f,  1.0f }
+    };  
+
 };

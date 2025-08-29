@@ -24,7 +24,14 @@ bool DXContext::Init()
 
     VALIDATE_PTR(FenceEvent);
 
-    DX_VALIDATE(Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CmdAlloc)), CmdAlloc);
+    CmdAllocs.resize(FrameCount);
+    for (size_t i = 0; i < FrameCount; ++i)
+    {
+        DX_VALIDATE(
+            Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CmdAllocs[i])),
+            CmdAllocs[i]
+        );
+    }
 
     DX_VALIDATE(
         Device->CreateCommandList1(
@@ -38,7 +45,7 @@ bool DXContext::Init()
 void DXContext::ShutDown()
 {
     CmdList.Reset();
-    CmdAlloc.Reset();
+    CmdAllocs.clear();
     if (FenceEvent)
     {
         CloseHandle(FenceEvent);
@@ -56,10 +63,10 @@ void DXContext::SignalAndWait()
     WAIT_FOR_HANDLE(FenceEvent, 2000);
 }
 
-ID3D12GraphicsCommandList7 *DXContext::InitCmdList()
+ID3D12GraphicsCommandList7 *DXContext::InitCmdList(UINT CurrentBufferIndex)
 {
-    CmdAlloc->Reset();
-    CmdList->Reset(CmdAlloc.Get(), nullptr);
+    CmdAllocs[CurrentBufferIndex]->Reset();
+    CmdList->Reset(CmdAllocs[CurrentBufferIndex].Get(), nullptr);
     return CmdList.Get();
 }
 

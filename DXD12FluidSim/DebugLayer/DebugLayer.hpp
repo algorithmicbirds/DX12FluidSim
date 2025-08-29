@@ -1,24 +1,28 @@
 #pragma once
 
 #include "GlobInclude/WinInclude.hpp"
+#include <iostream>
+#include <vector>
+
+using Microsoft::WRL::ComPtr;
 
 class DebugLayer
 {
 public:
     DebugLayer();
     ~DebugLayer();
-    DebugLayer(const DebugLayer &) = delete;
-    DebugLayer &operator=(const DebugLayer &) = delete;
 
-     void ReportLiveObjects();
-
-private:
     bool Init();
     void ShutDown();
 
+    void PrintLiveMessages();
+
 private:
 #ifdef _DEBUG
-    ComPtr<ID3D12Debug6> D3D12Debug;
+    ComPtr<ID3D12Debug> D3D12Debug;
     ComPtr<IDXGIDebug1> DXGIDebug;
-#endif // _DEBUG
+#endif
+
+    void ReportLiveObjects();
 };
+

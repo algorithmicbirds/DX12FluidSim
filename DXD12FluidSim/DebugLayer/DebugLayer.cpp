@@ -1,9 +1,6 @@
-#include "DebugLayer/DebugLayer.hpp"
-#include <iostream>
-#include <vector>
+#include "DebugLayer.hpp"
 
 DebugLayer::DebugLayer() { Init(); }
-
 DebugLayer::~DebugLayer() { ShutDown(); }
 
 bool DebugLayer::Init()
@@ -19,7 +16,6 @@ bool DebugLayer::Init()
         }
     }
 #endif
-
     return false;
 }
 
@@ -27,6 +23,27 @@ void DebugLayer::ShutDown()
 {
 #ifdef _DEBUG
     ReportLiveObjects();
+#endif
+}
+
+void DebugLayer::PrintLiveMessages()
+{
+#ifdef _DEBUG
+    ComPtr<IDXGIInfoQueue> infoQueue;
+    if (FAILED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&infoQueue))))
+        return;
+
+    UINT64 numMessages = infoQueue->GetNumStoredMessages(DXGI_DEBUG_ALL);
+    for (UINT64 i = 0; i < numMessages; ++i)
+    {
+        SIZE_T len = 0;
+        infoQueue->GetMessage(DXGI_DEBUG_ALL, i, nullptr, &len);
+        std::vector<char> bytes(len);
+        auto *msg = reinterpret_cast<DXGI_INFO_QUEUE_MESSAGE *>(bytes.data());
+        infoQueue->GetMessage(DXGI_DEBUG_ALL, i, msg, &len);
+        std::wcout << L"[D3D12] " << msg->pDescription << L"\n";
+    }
+    infoQueue->ClearStoredMessages(DXGI_DEBUG_ALL);
 #endif
 }
 
