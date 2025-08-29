@@ -18,7 +18,6 @@ int main(int argc, char **argv)
     DXSwapchain Swapchain{Context, Window.GetHwnd()};
     
     Renderer Renderer{Swapchain, *Context.GetDevice()};
-    //Renderer.Init();
     while (!Window.ShouldClose())
     {
         Window.Update();
@@ -27,6 +26,7 @@ int main(int argc, char **argv)
             Context.Flush(Swapchain.GetFrameCount());
             Swapchain.Resize();
             Window.ClearResizeFlags();
+            Renderer.CreateRTVAndDescHeap();
         }
 
         ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList();

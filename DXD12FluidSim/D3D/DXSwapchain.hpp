@@ -25,7 +25,15 @@ public:
         return Buffers[index].Get();
     }
 
-    inline UINT GetCurrentBackBufferIndex() const { return CurrentBackBufferIndex; }
+    inline ID3D12Resource1 *GetBuffer(UINT index) const
+    {
+        if (index >= FrameCount)
+            return nullptr;
+        return Buffers[index].Get();
+    }
+
+
+    inline UINT GetCurrentBackBufferIndex() const { return SwapChain3->GetCurrentBackBufferIndex(); }
 
 
 private:

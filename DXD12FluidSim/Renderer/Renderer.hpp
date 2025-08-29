@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GlobInclude/WinInclude.hpp"
+#include <vector>
 
 class DXSwapchain;
 
@@ -15,13 +16,16 @@ public:
 public:
     void BeginFrame(ID3D12GraphicsCommandList7 *CmdList);
     void EndFrame(ID3D12GraphicsCommandList7 *CmdList);
+    void CreateRTVAndDescHeap();
 
-    void Init();
 private:
+    void Init();
     void ShutDown();
+    void ReleaseRTVHeaps();
 
 private:
     DXSwapchain &SwapchainRef;
     ID3D12Device &DeviceRef;
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
 };
