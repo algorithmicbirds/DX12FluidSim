@@ -16,8 +16,9 @@ int main(int argc, char **argv)
     DXContext Context;
     Window Window;
     DXSwapchain Swapchain{Context, Window.GetHwnd()};
-    
+
     Renderer Renderer{Swapchain, *Context.GetDevice()};
+
     while (!Window.ShouldClose())
     {
         Window.Update();

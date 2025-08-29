@@ -8,7 +8,13 @@ Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device &Device) : SwapchainRef(
 }
 Renderer::~Renderer() { ReleaseRTVHeaps(); }
 
-void Renderer::Init() { CreateRTVAndDescHeap(); }
+void Renderer::Init()
+{
+    CreateRTVAndDescHeap(); 
+    ComPtr<ID3D12Resource2> VertexBuffer =
+        CreateVertexBuffer(1024, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+    VALIDATE_PTR(VertexBuffer.Get());
+}
 
 void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
@@ -84,4 +90,39 @@ void Renderer::ReleaseRTVHeaps()
 {
     RTVDescHeap.Reset();
     RTVHandles.clear();
+}
+
+ComPtr<ID3D12Resource2> Renderer::CreateVertexBuffer(
+    UINT64 SizeOfBufferInBytes, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES InitialResourceState
+)
+{
+    D3D12_HEAP_PROPERTIES HeapProps{};
+    HeapProps.Type = HeapType;
+    HeapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    HeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    HeapProps.CreationNodeMask = 1;
+    HeapProps.VisibleNodeMask = 1;
+
+    D3D12_RESOURCE_DESC Desc{};
+    Desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    Desc.Format = DXGI_FORMAT_UNKNOWN;
+    Desc.Alignment = 0;
+    Desc.MipLevels = 1;
+    Desc.Width = SizeOfBufferInBytes;
+    Desc.Height = 1;
+    Desc.DepthOrArraySize = 1;
+    Desc.SampleDesc.Count = 1;
+    Desc.SampleDesc.Quality = 0;
+    Desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    Desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    ComPtr<ID3D12Resource2> Buffer;
+
+    DX_VALIDATE(
+        DeviceRef.CreateCommittedResource(
+            &HeapProps, D3D12_HEAP_FLAG_NONE, &Desc, InitialResourceState, nullptr, IID_PPV_ARGS(&Buffer)
+        ),
+        Buffer
+    );
+    return Buffer;
 }

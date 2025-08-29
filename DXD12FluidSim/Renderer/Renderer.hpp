@@ -22,6 +22,9 @@ private:
     void Init();
     void ShutDown();
     void ReleaseRTVHeaps();
+    ComPtr<ID3D12Resource2> CreateVertexBuffer(
+        UINT64 SizeOfBufferInBytes, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES InitialResourceState
+    );
 
 private:
     DXSwapchain &SwapchainRef;
