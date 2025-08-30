@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-#include("${CMAKE_CURRENT_SOURCE_DIR}/Scripts/CompileShaders.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/Scripts/CompileShaders.cmake")
 
 set(CMAKE_CXX_STANDARD 17)
 option(PRODUCTION_BUILD "Make this a production build" ON)
@@ -38,7 +38,7 @@ else()
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=0) 
 endif()
 
-#add_dependencies(${PROJECT_NAME} Shaders)
+add_dependencies(DXD12FluidSim Shaders)
 
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/DXD12FluidSim" ${Vulkan_INCLUDE_DIRS})

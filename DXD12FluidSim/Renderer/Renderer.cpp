@@ -5,10 +5,12 @@
 
 Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
-    // Pipeline = std::make_unique<DXPipeline>();
     Init();
 }
-Renderer::~Renderer() { ReleaseRTVHeaps(); }
+Renderer::~Renderer() { 
+    ReleaseRTVHeaps();
+    VertexBuffer_Default.Reset();
+}
 
 void Renderer::Init()
 {

@@ -41,8 +41,6 @@ private:
 
     //CPU Visible Buffer
     ComPtr<ID3D12Resource2> VertexBuffer_Upload;
-    //std::unique_ptr<DXPipeline> Pipeline;
-    //UINT VertexBufferSize = 1024;
 
       Vertex TriangleVertices[3] = {
         {-1.0f, -1.0f},
