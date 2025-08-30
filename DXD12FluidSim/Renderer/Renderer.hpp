@@ -44,11 +44,12 @@ private:
     //CPU Visible Buffer
     ComPtr<ID3D12Resource2> VertexBuffer_Upload;
 
-     Vertex TriangleVertices[3] = {
-        {-0.5f, -0.5f}, 
-        {0.5f,  -0.5f},
-        {0.0f,  0.5f}  
+  Vertex TriangleVertices[3] = {
+        {-0.5f, -0.5f, 0.5f, 0.0f, 0.3f}, 
+        {0.5f,  -0.5f, 0.0f, 0.5f, 1.0f}, 
+        {0.0f,  0.5f,  0.0f, 1.0f, 0.5f}  
     };
+
 
 
 };

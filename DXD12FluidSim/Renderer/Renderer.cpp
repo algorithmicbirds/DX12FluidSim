@@ -29,7 +29,7 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
     CmdList->ResourceBarrier(1, &Barrier);
 
-    float ClearColor[] = {0.8f, 0.3f, 1.0f, 1.0f};
+    float ClearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     UINT CurrentBackBufferIndex = SwapchainRef.GetCurrentBackBufferIndex();
 
     CmdList->ClearRenderTargetView(RTVHandles.at(CurrentBackBufferIndex), ClearColor, 0, nullptr);
