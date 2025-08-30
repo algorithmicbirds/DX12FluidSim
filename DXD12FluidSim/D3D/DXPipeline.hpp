@@ -14,6 +14,7 @@ public:
 
 public:
     inline ID3D12PipelineState *GetPipelineStateObject() const { return PipelineStateObject.Get(); }
+    inline ID3D12RootSignature *GetRootSignature() const { return RootSignature.Get(); }
 
 private:
     bool Init();

@@ -21,15 +21,14 @@ public:
     void EndFrame(ID3D12GraphicsCommandList7 *CmdList);
     void CreateRTVAndDescHeap();
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
-    void BindInputAssembler(ID3D12GraphicsCommandList7 *CmdList);
 
 private:
     void Init();
-    void ShutDown();
     void ReleaseRTVHeaps();
     ComPtr<ID3D12Resource2> CreateVertexBuffer(
         UINT64 SizeOfBufferInBytes, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES InitialResourceState
     );
+    void CreateVertexBufferView();
 
 private:
     DXSwapchain &SwapchainRef;
@@ -37,6 +36,7 @@ private:
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
     std::unique_ptr<DXPipeline> Pipeline;
+    D3D12_VERTEX_BUFFER_VIEW VertexBufferView{};
 
     //Gpu Only Buffer
     ComPtr<ID3D12Resource2> VertexBuffer_Default;
@@ -44,10 +44,11 @@ private:
     //CPU Visible Buffer
     ComPtr<ID3D12Resource2> VertexBuffer_Upload;
 
-      Vertex TriangleVertices[3] = {
-        {-1.0f, -1.0f},
-        {-1.0f, 0.0f },
-        {0.0f,  1.0f }
-    };  
+     Vertex TriangleVertices[3] = {
+        {-0.5f, -0.5f}, 
+        {0.5f,  -0.5f},
+        {0.0f,  0.5f}  
+    };
+
 
 };

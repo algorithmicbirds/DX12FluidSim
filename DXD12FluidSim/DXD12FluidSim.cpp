@@ -37,7 +37,6 @@ int main()
 
         CmdList = Context.InitCmdList(Swapchain.GetCurrentBackBufferIndex());
         Renderer.BeginFrame(CmdList);
-        Renderer.BindInputAssembler(CmdList);
         Renderer.EndFrame(CmdList);
         Context.DispatchCmdList();
         Swapchain.Present();

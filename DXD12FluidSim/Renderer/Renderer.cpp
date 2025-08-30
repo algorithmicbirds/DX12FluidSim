@@ -6,16 +6,14 @@
 
 Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
-    Pipeline = std::make_unique<DXPipeline>(DeviceRef,SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
-    Init();
+    Pipeline = std::make_unique<DXPipeline>(DeviceRef, SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
+    CreateRTVAndDescHeap();
 }
 Renderer::~Renderer()
 {
     ReleaseRTVHeaps();
     VertexBuffer_Default.Reset();
 }
-
-void Renderer::Init() { CreateRTVAndDescHeap(); }
 
 void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
@@ -27,7 +25,7 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
     Barrier.Transition.pResource = CurrentBuffer;
     Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
     Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
     CmdList->ResourceBarrier(1, &Barrier);
 
@@ -36,6 +34,13 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 
     CmdList->ClearRenderTargetView(RTVHandles.at(CurrentBackBufferIndex), ClearColor, 0, nullptr);
     CmdList->OMSetRenderTargets(1, &RTVHandles.at(CurrentBackBufferIndex), false, nullptr);
+    CmdList->SetPipelineState(Pipeline->GetPipelineStateObject());
+    CmdList->SetGraphicsRootSignature(Pipeline->GetRootSignature());
+    CmdList->IASetVertexBuffers(0, 1, &VertexBufferView);
+    CmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    CmdList->RSSetViewports(1, &SwapchainRef.GetViewport());
+    CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
+    CmdList->DrawInstanced(_countof(TriangleVertices), 1, 0, 0);
 }
 
 void Renderer::EndFrame(ID3D12GraphicsCommandList7 *CmdList)
@@ -96,12 +101,26 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     VertexBuffer_Upload =
         CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
 
+    D3D12_RESOURCE_BARRIER Barrier{};
+    Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    Barrier.Transition.pResource = VertexBuffer_Default.Get();
+    Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+    Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+    CmdList->ResourceBarrier(1, &Barrier);
+
     Vertex *mappedData = nullptr;
     VertexBuffer_Upload->Map(0, nullptr, reinterpret_cast<void **>(&mappedData));
     memcpy(mappedData, TriangleVertices, sizeof(TriangleVertices));
     VertexBuffer_Upload->Unmap(0, nullptr);
-
     CmdList->CopyBufferRegion(VertexBuffer_Default.Get(), 0, VertexBuffer_Upload.Get(), 0, VertexBufferSize);
+    
+    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+    Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+    CmdList->ResourceBarrier(1, &Barrier);
+
+
+    CreateVertexBufferView();
 }
 
 void Renderer::ReleaseRTVHeaps()
@@ -145,13 +164,9 @@ ComPtr<ID3D12Resource2> Renderer::CreateVertexBuffer(
     return Buffer;
 }
 
-void Renderer::BindInputAssembler(ID3D12GraphicsCommandList7 *CmdList)
+void Renderer::CreateVertexBufferView()
 {
-    D3D12_VERTEX_BUFFER_VIEW VBV{};
-    VBV.BufferLocation = VertexBuffer_Default->GetGPUVirtualAddress();
-    VBV.SizeInBytes = sizeof(TriangleVertices);
-    VBV.StrideInBytes = sizeof(Vertex);
-    CmdList->IASetVertexBuffers(0, 1, &VBV);
-    CmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    CmdList->DrawInstanced(_countof(TriangleVertices), 1, 0, 0);
+    VertexBufferView.BufferLocation = VertexBuffer_Default->GetGPUVirtualAddress();
+    VertexBufferView.SizeInBytes = sizeof(TriangleVertices);
+    VertexBufferView.StrideInBytes = sizeof(Vertex);
 }

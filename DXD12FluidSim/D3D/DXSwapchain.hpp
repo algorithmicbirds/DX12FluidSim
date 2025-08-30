@@ -14,7 +14,6 @@ public:
     DXSwapchain &operator=(const DXSwapchain &) = delete;
     DXSwapchain(const DXSwapchain &) = delete;
 
-
 public:
     void Present();
     static constexpr size_t GetFrameCount() { return FrameCount; }
@@ -32,16 +31,22 @@ public:
         return Buffers[index].Get();
     }
 
+    inline D3D12_VIEWPORT GetViewport() const
+    {
+        return D3D12_VIEWPORT{0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height), 0.0f, 1.0f};
+    }
 
+    inline D3D12_RECT GetScissorRect() const
+    {
+        return D3D12_RECT{0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height)};
+    }
     inline UINT GetCurrentBackBufferIndex() const { return SwapChain3->GetCurrentBackBufferIndex(); }
-
 
 private:
     bool Init();
     void ShutDown();
     bool GetBuffers();
     void ReleaseBuffers();
-
 
 private:
     DXContext &ContextRef;
