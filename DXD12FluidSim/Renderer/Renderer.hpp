@@ -3,6 +3,7 @@
 #include "GlobInclude/WinInclude.hpp"
 #include <vector>
 #include "D3D/Vertex.hpp"
+#include <memory>
 
 class DXPipeline;
 class DXSwapchain;
@@ -10,7 +11,7 @@ class DXSwapchain;
 class Renderer
 {
 public:
-    Renderer(DXSwapchain &Swapchain, ID3D12Device& Device);
+    Renderer(DXSwapchain &Swapchain, ID3D12Device14& Device);
     ~Renderer();
     Renderer &operator=(const Renderer &) = delete;
     Renderer(const Renderer &) = delete;
@@ -32,9 +33,10 @@ private:
 
 private:
     DXSwapchain &SwapchainRef;
-    ID3D12Device &DeviceRef;
+    ID3D12Device14 &DeviceRef;
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
+    std::unique_ptr<DXPipeline> Pipeline;
 
     //Gpu Only Buffer
     ComPtr<ID3D12Resource2> VertexBuffer_Default;

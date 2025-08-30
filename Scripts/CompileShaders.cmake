@@ -18,29 +18,31 @@ foreach(SHADER ${SHADERS})
     get_filename_component(REL_DIR ${REL_PATH} DIRECTORY)
     get_filename_component(NAME ${SHADER} NAME)
     get_filename_component(NAME_WE ${SHADER} NAME_WE)
-    get_filename_component(EXT ${SHADER} LAST_EXT)
+
+    set(SHADER_TARGET "")
+    set(SHADER_ENTRY "")
 
     if(NAME MATCHES "\\_vs\\.hlsl$")
         set(SHADER_TARGET "vs_6_8")
-        set(OUT_FILE "${COMPILED_SHADERS_DIR}/${REL_DIR}/${NAME_WE}.cso")
+        set(SHADER_ENTRY "VSMain")
     elseif(NAME MATCHES "\\_ps\\.hlsl$")
         set(SHADER_TARGET "ps_6_8")
-        set(OUT_FILE "${COMPILED_SHADERS_DIR}/${REL_DIR}/${NAME_WE}.cso")
+        set(SHADER_ENTRY "PSMain")
     else()
-        message(FATAL_ERROR "Unknown shader type for ${SHADER}. Use *_vs.hlsl or *_ps.hlsl")
+        message(FATAL_ERROR "Unknown shader type for ${SHADER}. Use *_vs.hlsl, *_ps.hlsl")
     endif()
+
+    set(OUT_FILE "${COMPILED_SHADERS_DIR}/${REL_DIR}/${NAME_WE}.cso")
 
     get_filename_component(OUT_DIR ${OUT_FILE} DIRECTORY)
     file(MAKE_DIRECTORY ${OUT_DIR})
-
     add_custom_command(
         OUTPUT ${OUT_FILE}
-        COMMAND ${DXC_EXECUTABLE} -T ${SHADER_TARGET} -E main -Fo "${OUT_FILE}" "${SHADER}"
+        COMMAND ${DXC_EXECUTABLE} -T ${SHADER_TARGET} -E ${SHADER_ENTRY} -Fo "${OUT_FILE}" "${SHADER}"
         DEPENDS ${SHADER}
         COMMENT "Compiling HLSL shader ${REL_PATH}"
     )
-
     list(APPEND CSO_FILES ${OUT_FILE})
 endforeach()
 
-add_custom_target(Shaders ALL DEPENDS ${CSO_FILES})
+add_custom_target(Shaders DEPENDS ${CSO_FILES})

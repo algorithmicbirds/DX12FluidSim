@@ -11,7 +11,7 @@ public:
     DXContext &operator=(const DXContext &) = delete;
     DXContext(const DXContext &) = delete;
 
-    inline ID3D12Device *GetDevice() const { return Device.Get(); }
+    inline ID3D12Device14 *GetDevice() const { return Device.Get(); }
     inline ID3D12CommandQueue *GetCommandQueue() const { return CommandQueue.Get(); }
     inline ID3D12Fence *GetFence() const { return Fence.Get(); }
     inline IDXGIFactory7 *GetDXGIFactory() const { return DXGIFactory.Get(); }

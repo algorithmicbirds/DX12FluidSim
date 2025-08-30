@@ -2,20 +2,20 @@
 #include "D3D/DXSwapchain.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 #include "D3D/DXPipeline.hpp"
+#include <iostream>
 
-Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
+Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
+    Pipeline = std::make_unique<DXPipeline>(DeviceRef,SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
     Init();
 }
-Renderer::~Renderer() { 
+Renderer::~Renderer()
+{
     ReleaseRTVHeaps();
     VertexBuffer_Default.Reset();
 }
 
-void Renderer::Init()
-{
-    CreateRTVAndDescHeap();
-}
+void Renderer::Init() { CreateRTVAndDescHeap(); }
 
 void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
@@ -87,14 +87,15 @@ void Renderer::CreateRTVAndDescHeap()
     }
 }
 
-void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList) {
-  
+void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
+{
+
     UINT VertexBufferSize = sizeof(TriangleVertices);
     VertexBuffer_Default =
         CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COPY_DEST);
     VertexBuffer_Upload =
         CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
- 
+
     Vertex *mappedData = nullptr;
     VertexBuffer_Upload->Map(0, nullptr, reinterpret_cast<void **>(&mappedData));
     memcpy(mappedData, TriangleVertices, sizeof(TriangleVertices));
