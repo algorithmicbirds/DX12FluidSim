@@ -16,6 +16,7 @@ public:
     void ShutDown();
 
     void PrintLiveMessages();
+    void ReportLiveObjects();
 
 private:
 #ifdef _DEBUG
@@ -23,6 +24,5 @@ private:
     ComPtr<IDXGIDebug1> DXGIDebug;
 #endif
 
-    void ReportLiveObjects();
 };
 

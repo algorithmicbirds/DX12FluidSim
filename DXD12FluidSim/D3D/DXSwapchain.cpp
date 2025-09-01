@@ -48,7 +48,7 @@ bool DXSwapchain::Init()
 
 void DXSwapchain::Present()
 {
-    SwapChain3->Present(1, 0);
+    SwapChain3->Present(0, 0);
 }
 
 void DXSwapchain::ShutDown()

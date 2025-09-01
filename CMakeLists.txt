@@ -54,3 +54,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     dxguid
     d3d12
 )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    WIN32_EXECUTABLE ON
+)
