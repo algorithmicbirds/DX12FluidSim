@@ -20,14 +20,7 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     ID3D12Resource1 *CurrentBuffer = SwapchainRef.GetCurrentBackBuffer();
     VALIDATE_PTR(CurrentBuffer);
 
-    D3D12_RESOURCE_BARRIER Barrier{};
-    Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    Barrier.Transition.pResource = CurrentBuffer;
-    Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-    Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    CmdList->ResourceBarrier(1, &Barrier);
+    TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     float ClearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     UINT CurrentBackBufferIndex = SwapchainRef.GetCurrentBackBufferIndex();
@@ -45,19 +38,9 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 
 void Renderer::EndFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
-    VALIDATE_PTR(CmdList);
     ID3D12Resource1 *CurrentBuffer = SwapchainRef.GetCurrentBackBuffer();
     VALIDATE_PTR(CurrentBuffer);
-
-    D3D12_RESOURCE_BARRIER Barrier{};
-    Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    Barrier.Transition.pResource = CurrentBuffer;
-    Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-
-    CmdList->ResourceBarrier(1, &Barrier);
+    TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 }
 
 void Renderer::CreateRTVAndDescHeap()
@@ -97,28 +80,22 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 
     UINT VertexBufferSize = sizeof(TriangleVertices);
     VertexBuffer_Default =
-        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COPY_DEST);
+        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON);
     VertexBuffer_Upload =
-        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_COMMON);
 
-    D3D12_RESOURCE_BARRIER Barrier{};
-    Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    Barrier.Transition.pResource = VertexBuffer_Default.Get();
-    Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-    Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-    CmdList->ResourceBarrier(1, &Barrier);
-
+    TransitionResoure(CmdList, VertexBuffer_Default.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
     Vertex *mappedData = nullptr;
     VertexBuffer_Upload->Map(0, nullptr, reinterpret_cast<void **>(&mappedData));
     memcpy(mappedData, TriangleVertices, sizeof(TriangleVertices));
     VertexBuffer_Upload->Unmap(0, nullptr);
     CmdList->CopyBufferRegion(VertexBuffer_Default.Get(), 0, VertexBuffer_Upload.Get(), 0, VertexBufferSize);
-    
-    Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-    Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-    CmdList->ResourceBarrier(1, &Barrier);
-
+    TransitionResoure(
+        CmdList,
+        VertexBuffer_Default.Get(),
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
+    );
 
     CreateVertexBufferView();
 }
@@ -169,4 +146,20 @@ void Renderer::CreateVertexBufferView()
     VertexBufferView.BufferLocation = VertexBuffer_Default->GetGPUVirtualAddress();
     VertexBufferView.SizeInBytes = sizeof(TriangleVertices);
     VertexBufferView.StrideInBytes = sizeof(Vertex);
+}
+
+void Renderer::TransitionResoure(
+    ID3D12GraphicsCommandList7 *CmdList,
+    ID3D12Resource *ResourceToTransition,
+    D3D12_RESOURCE_STATES BeforeState,
+    D3D12_RESOURCE_STATES AfterState
+)
+{
+    D3D12_RESOURCE_BARRIER Barrier{};
+    Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    Barrier.Transition.pResource = ResourceToTransition;
+    Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    Barrier.Transition.StateBefore = BeforeState;
+    Barrier.Transition.StateAfter = AfterState;
+    CmdList->ResourceBarrier(1, &Barrier);
 }

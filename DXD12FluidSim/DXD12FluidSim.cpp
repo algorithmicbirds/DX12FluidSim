@@ -34,7 +34,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         DXSwapchain Swapchain{Context, Window.GetHwnd()};
 
         Renderer Renderer{Swapchain, *Context.GetDevice()};
-        ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList(Swapchain.GetCurrentBackBufferIndex());
+        ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList();
         Renderer.InitializeBuffers(CmdList);
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
@@ -52,7 +52,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
                 Renderer.CreateRTVAndDescHeap();
             }
 
-            CmdList = Context.InitCmdList(Swapchain.GetCurrentBackBufferIndex());
+            CmdList = Context.InitCmdList();
             Renderer.BeginFrame(CmdList);
             Renderer.EndFrame(CmdList);
             Context.DispatchCmdList();
