@@ -4,9 +4,15 @@
 #include <vector>
 #include "D3D/Vertex.hpp"
 #include <memory>
+#include "D3D/Camera.hpp"
 
 class DXPipeline;
 class DXSwapchain;
+
+struct CameraBufferConstants
+{
+    DirectX::XMMATRIX ViewProjection;
+};
 
 class Renderer
 {
@@ -41,22 +47,27 @@ private:
         ComPtr<ID3D12Resource2> &UploadBuffer
     );
 
+    void UpdateCameraBuffer();
+
 private:
     DXSwapchain &SwapchainRef;
     ID3D12Device14 &DeviceRef;
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
     std::unique_ptr<DXPipeline> Pipeline;
-    D3D12_VERTEX_BUFFER_VIEW VertexBufferView{};
-    D3D12_INDEX_BUFFER_VIEW IndexBufferView{};
+    
+    Camera Camera;
+    ComPtr<ID3D12Resource2> CameraBuffer_Default;
+    ComPtr<ID3D12Resource2> CameraBuffer_Upload;
+    D3D12_GPU_VIRTUAL_ADDRESS CameraBufferGPUAddress;
 
-    // Gpu Only Buffer
     ComPtr<ID3D12Resource2> VertexBuffer_Default;
-    ComPtr<ID3D12Resource2> IndexBuffer_Default;
-
-    // CPU Visible Buffer
     ComPtr<ID3D12Resource2> VertexBuffer_Upload;
+    D3D12_VERTEX_BUFFER_VIEW VertexBufferView{};
+
+    ComPtr<ID3D12Resource2> IndexBuffer_Default;
     ComPtr<ID3D12Resource2> IndexBuffer_Upload;
+    D3D12_INDEX_BUFFER_VIEW IndexBufferView{};
 
     Vertex QuadVertices[4] = {
         {-0.5f, -0.5f, 1.0f, 0.0f, 0.0f}, // 0 bottom-left (red)

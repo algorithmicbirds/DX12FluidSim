@@ -1,13 +1,25 @@
-struct VSOutput
+cbuffer CameraBuffer : register(b0)
 {
-    float4 pos : SV_POSITION;
-    float3 color : COLOR;
+    float4x4 ViewProjection;
 };
 
-VSOutput VSMain(float2 pos : POSITION, float3 color : COLOR)
+
+struct VSInput
+{
+    float3 Position : POSITION;
+    float3 Color : COLOR;
+};
+
+struct VSOutput
+{
+    float4 Position : SV_POSITION;
+    float3 Color : COLOR;
+};
+
+VSOutput VSMain(VSInput input)
 {
     VSOutput output;
-    output.pos = float4(pos, 0.0f, 1.0f);
-    output.color = color;
+    output.Position = mul(float4(input.Position, 1.0f), ViewProjection);
+    output.Color = input.Color;
     return output;
 }

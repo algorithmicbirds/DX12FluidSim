@@ -41,6 +41,8 @@ public:
         return D3D12_RECT{0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height)};
     }
     inline UINT GetCurrentBackBufferIndex() const { return SwapChain3->GetCurrentBackBufferIndex(); }
+    inline float GetAspectRatio() const { return static_cast<float>(Width) / static_cast<float>(Height); }
+
 
 private:
     bool Init();

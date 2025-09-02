@@ -17,6 +17,7 @@ Renderer::~Renderer()
 
 void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
+    UpdateCameraBuffer();
     ID3D12Resource1 *CurrentBuffer = SwapchainRef.GetCurrentBackBuffer();
     VALIDATE_PTR(CurrentBuffer);
 
@@ -29,6 +30,7 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->OMSetRenderTargets(1, &RTVHandles.at(CurrentBackBufferIndex), false, nullptr);
     CmdList->SetPipelineState(Pipeline->GetPipelineStateObject());
     CmdList->SetGraphicsRootSignature(Pipeline->GetRootSignature());
+    CmdList->SetGraphicsRootConstantBufferView(0, CameraBufferGPUAddress);
     CmdList->IASetVertexBuffers(0, 1, &VertexBufferView);
     CmdList->IASetIndexBuffer(&IndexBufferView);
     CmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -93,6 +95,17 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     IndexBufferView.BufferLocation = IndexBuffer_Default->GetGPUVirtualAddress();
     IndexBufferView.SizeInBytes = IndexBufferSize;
     IndexBufferView.Format = DXGI_FORMAT_R16_UINT;
+
+    Camera.SetPosition({0.0f, 0.0f, -5.0f});
+    Camera.SetTarget({0.0f, 0.0f, 0.0f});
+    Camera.SetLens(DirectX::XM_PIDIV4, SwapchainRef.GetAspectRatio(), 0.1f, 1000.0f);
+
+    UINT CbSize = (sizeof(CameraBufferConstants) + 255) & ~255;
+    CameraBufferConstants CbData;
+    CbData.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
+
+    CreateUploadBuffer(CmdList, CbSize, &CbData, CameraBuffer_Default, CameraBuffer_Upload);
+    CameraBufferGPUAddress = CameraBuffer_Default->GetGPUVirtualAddress();
 }
 
 void Renderer::ReleaseRTVHeaps()
@@ -175,4 +188,15 @@ void Renderer::CreateUploadBuffer(
         D3D12_RESOURCE_STATE_COPY_DEST,
         D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
     );
+}
+
+void Renderer::UpdateCameraBuffer()
+{
+    CameraBufferConstants CbData;
+    CbData.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
+
+    void *mapped = nullptr;
+    CameraBuffer_Upload->Map(0, nullptr, &mapped);
+    memcpy(mapped, &CbData, sizeof(CbData));
+    CameraBuffer_Upload->Unmap(0, nullptr);
 }

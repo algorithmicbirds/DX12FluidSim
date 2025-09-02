@@ -83,9 +83,15 @@ ID3D12RootSignature *DXPipeline::CreateRootSignature()
     ComPtr<ID3DBlob> RootSigBlob;
     ComPtr<ID3DBlob> RootErrBlob;
 
+    D3D12_ROOT_PARAMETER RootParam{};
+    RootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam.Descriptor.ShaderRegister = 0; 
+    RootParam.Descriptor.RegisterSpace = 0;
+    RootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
     D3D12_ROOT_SIGNATURE_DESC RootSigDesc{};
-    RootSigDesc.NumParameters = 0;
-    RootSigDesc.pParameters = nullptr;
+    RootSigDesc.NumParameters = 1;
+    RootSigDesc.pParameters = &RootParam;
     RootSigDesc.NumStaticSamplers = 0;
     RootSigDesc.pStaticSamplers = nullptr;
     RootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
