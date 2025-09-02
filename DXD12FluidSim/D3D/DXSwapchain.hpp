@@ -52,6 +52,7 @@ private:
     DXContext &ContextRef;
     static constexpr size_t FrameCount = 3;
     ComPtr<IDXGISwapChain3> SwapChain3;
+    ComPtr<IDXGIFactory7> DXGIFactory;
     ComPtr<ID3D12Resource1> Buffers[FrameCount];
     UINT CurrentBackBufferIndex;
     HWND HwndRef;

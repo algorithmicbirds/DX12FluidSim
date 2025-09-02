@@ -20,7 +20,6 @@ public:
 
     inline ID3D12Device14 *GetDevice() const { return Device.Get(); }
     inline ID3D12CommandQueue *GetCommandQueue() const { return CommandQueue.Get(); }
-    inline IDXGIFactory7 *GetDXGIFactory() const { return DXGIFactory.Get(); }
 
 public:
     void SignalAndWait();
@@ -37,7 +36,6 @@ private:
     ComPtr<ID3D12CommandQueue> CommandQueue;
     std::vector<FrameData> Frames;
     ComPtr<ID3D12GraphicsCommandList7> CmdList;
-    ComPtr<IDXGIFactory7> DXGIFactory;
     HANDLE FenceEvent = nullptr;
     UINT CurrentFrameIndex = 0;
     size_t FrameCount = 3;

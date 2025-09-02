@@ -30,10 +30,11 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->SetPipelineState(Pipeline->GetPipelineStateObject());
     CmdList->SetGraphicsRootSignature(Pipeline->GetRootSignature());
     CmdList->IASetVertexBuffers(0, 1, &VertexBufferView);
+    CmdList->IASetIndexBuffer(&IndexBufferView);
     CmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     CmdList->RSSetViewports(1, &SwapchainRef.GetViewport());
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
-    CmdList->DrawInstanced(_countof(TriangleVertices), 1, 0, 0);
+    CmdList->DrawIndexedInstanced(_countof(QuadIndices), 1, 0, 0, 0);
 }
 
 void Renderer::EndFrame(ID3D12GraphicsCommandList7 *CmdList)
@@ -78,26 +79,20 @@ void Renderer::CreateRTVAndDescHeap()
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
 
-    UINT VertexBufferSize = sizeof(TriangleVertices);
-    VertexBuffer_Default =
-        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON);
-    VertexBuffer_Upload =
-        CreateVertexBuffer(VertexBufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_COMMON);
+    UINT VertexBufferSize = sizeof(QuadVertices);
+   
+    CreateUploadBuffer(CmdList, VertexBufferSize, QuadVertices, VertexBuffer_Default, VertexBuffer_Upload);
 
-    TransitionResoure(CmdList, VertexBuffer_Default.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-    Vertex *mappedData = nullptr;
-    VertexBuffer_Upload->Map(0, nullptr, reinterpret_cast<void **>(&mappedData));
-    memcpy(mappedData, TriangleVertices, sizeof(TriangleVertices));
-    VertexBuffer_Upload->Unmap(0, nullptr);
-    CmdList->CopyBufferRegion(VertexBuffer_Default.Get(), 0, VertexBuffer_Upload.Get(), 0, VertexBufferSize);
-    TransitionResoure(
-        CmdList,
-        VertexBuffer_Default.Get(),
-        D3D12_RESOURCE_STATE_COPY_DEST,
-        D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
-    );
+    VertexBufferView.BufferLocation = VertexBuffer_Default->GetGPUVirtualAddress();
+    VertexBufferView.SizeInBytes = sizeof(QuadVertices);
+    VertexBufferView.StrideInBytes = sizeof(Vertex);
 
-    CreateVertexBufferView();
+    UINT IndexBufferSize = sizeof(QuadIndices);
+    CreateUploadBuffer(CmdList, IndexBufferSize, QuadIndices, IndexBuffer_Default, IndexBuffer_Upload);
+    
+    IndexBufferView.BufferLocation = IndexBuffer_Default->GetGPUVirtualAddress();
+    IndexBufferView.SizeInBytes = IndexBufferSize;
+    IndexBufferView.Format = DXGI_FORMAT_R16_UINT;
 }
 
 void Renderer::ReleaseRTVHeaps()
@@ -106,7 +101,7 @@ void Renderer::ReleaseRTVHeaps()
     RTVHandles.clear();
 }
 
-ComPtr<ID3D12Resource2> Renderer::CreateVertexBuffer(
+ComPtr<ID3D12Resource2> Renderer::CreateBuffer(
     UINT64 SizeOfBufferInBytes, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES InitialResourceState
 )
 {
@@ -141,13 +136,6 @@ ComPtr<ID3D12Resource2> Renderer::CreateVertexBuffer(
     return Buffer;
 }
 
-void Renderer::CreateVertexBufferView()
-{
-    VertexBufferView.BufferLocation = VertexBuffer_Default->GetGPUVirtualAddress();
-    VertexBufferView.SizeInBytes = sizeof(TriangleVertices);
-    VertexBufferView.StrideInBytes = sizeof(Vertex);
-}
-
 void Renderer::TransitionResoure(
     ID3D12GraphicsCommandList7 *CmdList,
     ID3D12Resource *ResourceToTransition,
@@ -162,4 +150,29 @@ void Renderer::TransitionResoure(
     Barrier.Transition.StateBefore = BeforeState;
     Barrier.Transition.StateAfter = AfterState;
     CmdList->ResourceBarrier(1, &Barrier);
+}
+
+void Renderer::CreateUploadBuffer(
+    ID3D12GraphicsCommandList7 *CmdList,
+    UINT BufferSize,
+    const void* CPUData,
+    ComPtr<ID3D12Resource2>& DefaultBuffer,
+    ComPtr<ID3D12Resource2>& UploadBuffer
+)
+{
+    DefaultBuffer = CreateBuffer(BufferSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON);
+    UploadBuffer = CreateBuffer(BufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_COMMON);
+
+    TransitionResoure(CmdList, DefaultBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+    void *mappedData = nullptr;
+    UploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedData));
+    memcpy(mappedData, CPUData, BufferSize);
+    UploadBuffer->Unmap(0, nullptr);
+    CmdList->CopyBufferRegion(DefaultBuffer.Get(), 0, UploadBuffer.Get(), 0, BufferSize);
+    TransitionResoure(
+        CmdList,
+        DefaultBuffer.Get(),
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
+    );
 }

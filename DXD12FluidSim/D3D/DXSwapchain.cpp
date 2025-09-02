@@ -13,6 +13,8 @@ DXSwapchain::~DXSwapchain() {}
 
 bool DXSwapchain::Init()
 {
+    DX_VALIDATE(CreateDXGIFactory2(0, IID_PPV_ARGS(&DXGIFactory)), DXGIFactory);
+
     DXGI_SWAP_CHAIN_DESC1 SwapchainDesc{};
     SwapchainDesc.Width = 1920;
     SwapchainDesc.Height = 1080;
@@ -32,11 +34,9 @@ bool DXSwapchain::Init()
 
     ComPtr<IDXGISwapChain1> SwapChain1;
 
-    IDXGIFactory7 *Factory = ContextRef.GetDXGIFactory();
-    VALIDATE_PTR(Factory);
-    Factory->CreateSwapChainForHwnd(
+    DX_VALIDATE(DXGIFactory->CreateSwapChainForHwnd(
         ContextRef.GetCommandQueue(), HwndRef, &SwapchainDesc, &FSwapChainDesc, nullptr, SwapChain1.GetAddressOf()
-    );
+    ), SwapChain1);
 
     DX_VALIDATE(SwapChain1->QueryInterface(IID_PPV_ARGS(&SwapChain3)), SwapChain3);
 

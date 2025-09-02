@@ -8,7 +8,6 @@ DXContext::~DXContext() { ShutDown(); }
 bool DXContext::Init()
 {
 
-    DX_VALIDATE(CreateDXGIFactory2(0, IID_PPV_ARGS(&DXGIFactory)), DXGIFactory);
     DX_VALIDATE(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&Device)), Device);
 
     D3D12_COMMAND_QUEUE_DESC CmdQueueDesc{};
@@ -47,7 +46,6 @@ bool DXContext::Init()
 
 void DXContext::ShutDown()
 {
-    CmdList.Reset();
     if (FenceEvent)
     {
         CloseHandle(FenceEvent);
