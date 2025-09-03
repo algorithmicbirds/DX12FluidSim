@@ -28,10 +28,9 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->SetPipelineState(Pipeline->GetPipelineStateObject());
     CmdList->SetGraphicsRootSignature(Pipeline->GetRootSignature());
     CmdList->SetGraphicsRootConstantBufferView(0, CameraBufferGPUAddress);
-    QuadMesh->Bind(CmdList);
     CmdList->RSSetViewports(1, &SwapchainRef.GetViewport());
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
-    CmdList->DrawIndexedInstanced(QuadMesh->GetIndexCount(), 1, 0, 0, 0);
+    RenderGameObject(CmdList);
 }
 
 void Renderer::EndFrame(ID3D12GraphicsCommandList7 *CmdList)
@@ -76,7 +75,7 @@ void Renderer::CreateRTVAndDescHeap()
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
     QuadMesh = std::make_unique<Mesh<Vertex>>(DeviceRef, CmdList, QuadVertices, QuadIndices);
-
+    
     Camera.SetPosition({0.0f, 0.0f, -5.0f});
     Camera.SetTarget({0.0f, 0.0f, 0.0f});
     Camera.SetLens(DirectX::XM_PIDIV4, SwapchainRef.GetAspectRatio(), 0.1f, 1000.0f);
@@ -97,11 +96,48 @@ void Renderer::ReleaseRTVHeaps()
 
 void Renderer::UpdateCameraBuffer()
 {
-    CameraBufferConstants CbData;
-    CbData.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
+    CameraBufferConstants CBData;
+    CBData.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
 
     void *mapped = nullptr;
     CameraBuffer_Upload->Map(0, nullptr, &mapped);
-    memcpy(mapped, &CbData, sizeof(CbData));
+    memcpy(mapped, &CBData, sizeof(CBData));
     CameraBuffer_Upload->Unmap(0, nullptr);
+}
+
+void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList)
+{
+    GameObj->Transform.UpdateMatrix();
+    TransformConstants CBData{};
+    CBData.ModelMatrix = GameObj->Transform.ModelMatrix;
+
+    UINT CBSize = (sizeof(TransformConstants) + 255) & ~255;
+
+    GameObjectGPUData Data;
+    Utils::CreateUploadBuffer(
+        DeviceRef, CmdList, CBSize, &CBData, Data.TransformBuffer_Default, Data.TransformBuffer_Upload
+    );
+
+    Data.GPUAddress = Data.TransformBuffer_Default->GetGPUVirtualAddress();
+    GameObjectResources[GameObj] = std::move(Data);
+    RegisteredObjects.push_back(GameObj);
+}
+
+void Renderer::RenderGameObject(ID3D12GraphicsCommandList7* CmdList) {
+    for (auto *OBJ : RegisteredObjects) 
+    {
+        OBJ->Transform.UpdateMatrix();
+
+        auto &Data = GameObjectResources[OBJ];
+        TransformConstants CBData{OBJ->Transform.ModelMatrix};
+
+        void *mapped = nullptr;
+        Data.TransformBuffer_Upload->Map(0, nullptr, &mapped);
+        memcpy(mapped, &CBData, sizeof(CBData));
+        Data.TransformBuffer_Upload->Unmap(0, nullptr);
+
+        CmdList->SetGraphicsRootConstantBufferView(1, Data.GPUAddress); 
+        OBJ->Mesh->Bind(CmdList);
+        CmdList->DrawIndexedInstanced(OBJ->Mesh->GetIndexCount(), 1, 0, 0, 0);
+    }
 }

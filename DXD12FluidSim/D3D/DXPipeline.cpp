@@ -83,15 +83,23 @@ ID3D12RootSignature *DXPipeline::CreateRootSignature()
     ComPtr<ID3DBlob> RootSigBlob;
     ComPtr<ID3DBlob> RootErrBlob;
 
-    D3D12_ROOT_PARAMETER RootParam{};
-    RootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    RootParam.Descriptor.ShaderRegister = 0; 
-    RootParam.Descriptor.RegisterSpace = 0;
-    RootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    D3D12_ROOT_PARAMETER RootParam[2] = {};
+    // Camera buffer(b0)
+    RootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[0].Descriptor.ShaderRegister = 0; 
+    RootParam[0].Descriptor.RegisterSpace = 0;
+    RootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    
+    // Model Transform(b1)
+    RootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[1].Descriptor.ShaderRegister = 1; 
+    RootParam[1].Descriptor.RegisterSpace = 0;
+    RootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
 
     D3D12_ROOT_SIGNATURE_DESC RootSigDesc{};
-    RootSigDesc.NumParameters = 1;
-    RootSigDesc.pParameters = &RootParam;
+    RootSigDesc.NumParameters = _countof(RootParam);
+    RootSigDesc.pParameters = RootParam;
     RootSigDesc.NumStaticSamplers = 0;
     RootSigDesc.pStaticSamplers = nullptr;
     RootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -158,8 +166,8 @@ D3D12_BLEND_DESC DXPipeline::InitBlendDesc()
 D3D12_DEPTH_STENCIL_DESC DXPipeline::InitDepthStencilDesc()
 {
     D3D12_DEPTH_STENCIL_DESC DepthStencilDesc{};
-    DepthStencilDesc.DepthEnable = FALSE;
-    DepthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    DepthStencilDesc.DepthEnable = TRUE;
+    DepthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     DepthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     DepthStencilDesc.StencilEnable = FALSE;
     DepthStencilDesc.StencilReadMask = 0;

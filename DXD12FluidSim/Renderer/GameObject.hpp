@@ -1,30 +1,30 @@
 #pragma once
 
 #include "GlobInclude/WinInclude.hpp"
-
-struct TransformConstants
-{
-    DirectX::XMFLOAT4X4 ModelMatrix;
-};
+#include "Renderer/Mesh.hpp"
+#include <memory>
+#include "D3D/Vertex.hpp"
 
 struct Transform
 {
-    DirectX::XMFLOAT3 Translation = {0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 Rotation = {0.0f, 0.0f, 0.0f};
-    DirectX::XMFLOAT3 Scale = {1.0f, 1.0f, 1.0f};
+    DirectX::XMFLOAT3 Translation{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 Rotation{0.0f, 0.0f, 0.0f};
+    DirectX::XMFLOAT3 Scale{1.0f, 1.0f, 1.0f};
 
-    DirectX::XMFLOAT4X4 GetModelMatrix()
+    DirectX::XMFLOAT4X4 ModelMatrix;
+
+    void UpdateMatrix()
     {
         using namespace DirectX;
-        XMMATRIX T = XMMatrixTranslation(Translation.x, Translation.y, Translation.y);
+        XMMATRIX T = XMMatrixTranslation(Translation.x, Translation.y, Translation.z);
         XMMATRIX R = XMMatrixRotationRollPitchYaw(Rotation.x, Rotation.y, Rotation.z);
         XMMATRIX S = XMMatrixScaling(Scale.x, Scale.y, Scale.z);
 
         XMMATRIX M = S * R * T;
-        XMFLOAT4X4 ModelMatrix;
         XMStoreFloat4x4(&ModelMatrix, M);
-        return ModelMatrix;
     }
+
+    Transform() { UpdateMatrix(); }
 };
 
 class GameObject
@@ -46,6 +46,11 @@ public:
 
 public:
     Transform Transform;
+
+    // Currently bound to Mesh<Vertex>.
+    // Generalize to support multiple vertex types (via templates or a common base) later.
+    std::shared_ptr<Mesh<Vertex>> Mesh;
+
 
 private:
     GameObject(id_t ObjectId) : ID{ObjectId} {};

@@ -6,13 +6,27 @@
 #include <memory>
 #include "Renderer/Camera.hpp"
 #include "Renderer/Mesh.hpp"
+#include "Renderer/GameObject.hpp"
+#include <unordered_map>
 
 class DXPipeline;
 class DXSwapchain;
 
+struct GameObjectGPUData
+{
+    ComPtr<ID3D12Resource2> TransformBuffer_Default;
+    ComPtr<ID3D12Resource2> TransformBuffer_Upload;
+    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
+};
+
 struct CameraBufferConstants
 {
     DirectX::XMMATRIX ViewProjection;
+};
+
+struct TransformConstants
+{
+    DirectX::XMFLOAT4X4 ModelMatrix;
 };
 
 class Renderer
@@ -28,11 +42,13 @@ public:
     void EndFrame(ID3D12GraphicsCommandList7 *CmdList);
     void CreateRTVAndDescHeap();
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
+    void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
 
 private:
     void Init();
     void ReleaseRTVHeaps();
     void UpdateCameraBuffer();
+    void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
 
 private:
     DXSwapchain &SwapchainRef;
@@ -63,4 +79,6 @@ private:
     };
 
     std::unique_ptr<Mesh<Vertex>> QuadMesh;
+    std::unordered_map<GameObject *, GameObjectGPUData> GameObjectResources;
+    std::vector<GameObject *> RegisteredObjects;
 };
