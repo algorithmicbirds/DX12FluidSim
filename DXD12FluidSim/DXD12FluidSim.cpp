@@ -72,7 +72,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
                 Context.Flush(Swapchain.GetFrameCount());
                 Swapchain.Resize();
                 Window.ClearResizeFlags();
-                Renderer.CreateRTVAndDescHeap();
             }
             //QuadObj->Transform.Rotation = {1.0f, 1.0f, 0.0f};
             CmdList = Context.InitCmdList();

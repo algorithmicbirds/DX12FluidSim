@@ -2,6 +2,8 @@
 
 #include "GlobInclude/WinInclude.hpp"
 #include <vector>
+#include <stdexcept>
+#include <iostream>
 
 class DXContext;
 class Window;
@@ -18,6 +20,7 @@ public:
     void Present();
     static constexpr size_t GetFrameCount() { return FrameCount; }
     void Resize();
+
     inline ID3D12Resource1 *GetCurrentBackBuffer() const
     {
         UINT index = SwapChain3->GetCurrentBackBufferIndex();
@@ -35,6 +38,11 @@ public:
     inline const D3D12_RECT &GetScissorRect() const { return ScissorRect; }
     inline UINT GetCurrentBackBufferIndex() const { return SwapChain3->GetCurrentBackBufferIndex(); }
     inline float GetAspectRatio() const { return static_cast<float>(Width) / static_cast<float>(Height); }
+    inline D3D12_CPU_DESCRIPTOR_HANDLE& GetCurrentRTVHandle()
+    {
+  
+        return RTVHandles.at(SwapChain3->GetCurrentBackBufferIndex());
+    }
 
 private:
     bool Init();
@@ -42,14 +50,19 @@ private:
     bool GetBuffers();
     void ReleaseBuffers();
     void UpdateViewportAndScissor();
+    void CreateRTVAndDescHeap();
+    void ReleaseRTVHeaps();
 
 private:
     DXContext &ContextRef;
     static constexpr size_t FrameCount = 3;
     ComPtr<IDXGISwapChain3> SwapChain3;
     ComPtr<IDXGIFactory7> DXGIFactory;
+    ComPtr<ID3D12Resource2> DepthBuffer;
+    ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
     ComPtr<ID3D12Resource1> Buffers[FrameCount];
-    UINT CurrentBackBufferIndex;
+    UINT CurrentBackBufferIndex = 0;
     HWND HwndRef;
     UINT Height = 1080;
     UINT Width = 1920;

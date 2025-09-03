@@ -8,9 +8,8 @@
 Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
     Pipeline = std::make_unique<DXPipeline>(DeviceRef, SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
-    CreateRTVAndDescHeap();
 }
-Renderer::~Renderer() { ReleaseRTVHeaps(); }
+Renderer::~Renderer() {  }
 
 void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
@@ -21,10 +20,11 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     Utils::TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     float ClearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
-    UINT CurrentBackBufferIndex = SwapchainRef.GetCurrentBackBufferIndex();
 
-    CmdList->ClearRenderTargetView(RTVHandles.at(CurrentBackBufferIndex), ClearColor, 0, nullptr);
-    CmdList->OMSetRenderTargets(1, &RTVHandles.at(CurrentBackBufferIndex), false, nullptr);
+    D3D12_CPU_DESCRIPTOR_HANDLE RTVHandle = SwapchainRef.GetCurrentRTVHandle();
+
+    CmdList->ClearRenderTargetView(RTVHandle, ClearColor, 0, nullptr);
+    CmdList->OMSetRenderTargets(1, &RTVHandle, false, nullptr);
     CmdList->SetPipelineState(Pipeline->GetPipelineStateObject());
     CmdList->SetGraphicsRootSignature(Pipeline->GetRootSignature());
     CmdList->SetGraphicsRootConstantBufferView(0, CameraBufferGPUAddress);
@@ -40,42 +40,10 @@ void Renderer::EndFrame(ID3D12GraphicsCommandList7 *CmdList)
     Utils::TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 }
 
-void Renderer::CreateRTVAndDescHeap()
-{
-    ReleaseRTVHeaps();
-    D3D12_DESCRIPTOR_HEAP_DESC DescHeapDesc;
-    DescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    DescHeapDesc.NumDescriptors = SwapchainRef.GetFrameCount();
-    DescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    DescHeapDesc.NodeMask = 0;
-    DX_VALIDATE(DeviceRef.CreateDescriptorHeap(&DescHeapDesc, IID_PPV_ARGS(&RTVDescHeap)), RTVDescHeap);
 
-    RTVHandles.resize(SwapchainRef.GetFrameCount());
-    D3D12_CPU_DESCRIPTOR_HANDLE FirstCPUDescHandle = RTVDescHeap->GetCPUDescriptorHandleForHeapStart();
-    UINT HandleIncrement = DeviceRef.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    for (size_t i = 0; i < SwapchainRef.GetFrameCount(); ++i)
-    {
-        RTVHandles.at(i) = FirstCPUDescHandle;
-        RTVHandles.at(i).ptr += HandleIncrement * i;
-    }
-    for (size_t i = 0; i < SwapchainRef.GetFrameCount(); ++i)
-    {
-        VALIDATE_PTR(RTVDescHeap);
-        ID3D12Resource1 *buffer = SwapchainRef.GetBuffer(i);
-        D3D12_RENDER_TARGET_VIEW_DESC RTV;
-        RTV.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        RTV.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-        RTV.Texture2D.MipSlice = 0;
-        RTV.Texture2D.PlaneSlice = 0;
-
-        DeviceRef.CreateRenderTargetView(buffer, &RTV, RTVHandles.at(i));
-    }
-}
 
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
-    QuadMesh = std::make_unique<Mesh<Vertex>>(DeviceRef, CmdList, QuadVertices, QuadIndices);
-    
     Camera.SetPosition({0.0f, 0.0f, -5.0f});
     Camera.SetTarget({0.0f, 0.0f, 0.0f});
     Camera.SetLens(DirectX::XM_PIDIV4, SwapchainRef.GetAspectRatio(), 0.1f, 1000.0f);
@@ -86,12 +54,6 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 
     Utils::CreateUploadBuffer(DeviceRef, CmdList, CbSize, &CbData, CameraBuffer_Default, CameraBuffer_Upload);
     CameraBufferGPUAddress = CameraBuffer_Default->GetGPUVirtualAddress();
-}
-
-void Renderer::ReleaseRTVHeaps()
-{
-    RTVDescHeap.Reset();
-    RTVHandles.clear();
 }
 
 void Renderer::UpdateCameraBuffer()

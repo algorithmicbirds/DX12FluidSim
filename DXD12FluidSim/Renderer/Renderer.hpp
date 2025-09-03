@@ -40,21 +40,18 @@ public:
 public:
     void BeginFrame(ID3D12GraphicsCommandList7 *CmdList);
     void EndFrame(ID3D12GraphicsCommandList7 *CmdList);
-    void CreateRTVAndDescHeap();
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
     void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
 
 private:
     void Init();
-    void ReleaseRTVHeaps();
     void UpdateCameraBuffer();
     void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
 
 private:
     DXSwapchain &SwapchainRef;
     ID3D12Device14 &DeviceRef;
-    ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
-    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
+
     std::unique_ptr<DXPipeline> Pipeline;
 
     Camera Camera;
@@ -62,23 +59,6 @@ private:
     ComPtr<ID3D12Resource2> CameraBuffer_Upload;
     D3D12_GPU_VIRTUAL_ADDRESS CameraBufferGPUAddress;
 
-    Vertex QuadVertices[4] = {
-        {-0.5f, -0.5f, 1.0f, 0.0f, 0.0f}, // 0 bottom-left (red)
-        {0.5f,  -0.5f, 0.0f, 1.0f, 0.0f}, // 1 bottom-right (green)
-        {-0.5f, 0.5f,  0.0f, 0.0f, 1.0f}, // 2 top-left (blue)
-        {0.5f,  0.5f,  1.0f, 1.0f, 0.0f}  // 3 top-right (yellow)
-    };
-
-    uint16_t QuadIndices[6] = {
-        0,
-        1,
-        2, // first triangle
-        2,
-        1,
-        3 // second triangle
-    };
-
-    std::unique_ptr<Mesh<Vertex>> QuadMesh;
     std::unordered_map<GameObject *, GameObjectGPUData> GameObjectResources;
     std::vector<GameObject *> RegisteredObjects;
 };
