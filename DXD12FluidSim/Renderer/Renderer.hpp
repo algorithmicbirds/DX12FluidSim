@@ -5,6 +5,7 @@
 #include "D3D/Vertex.hpp"
 #include <memory>
 #include "Renderer/Camera.hpp"
+#include "Renderer/Mesh.hpp"
 
 class DXPipeline;
 class DXSwapchain;
@@ -31,22 +32,6 @@ public:
 private:
     void Init();
     void ReleaseRTVHeaps();
-    ComPtr<ID3D12Resource2>
-    CreateBuffer(UINT64 SizeOfBufferInBytes, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES InitialResourceState);
-    void TransitionResoure(
-        ID3D12GraphicsCommandList7 *CmdList,
-        ID3D12Resource *ResourceToTransition,
-        D3D12_RESOURCE_STATES BeforeState,
-        D3D12_RESOURCE_STATES AfterState
-    );
-    void CreateUploadBuffer(
-        ID3D12GraphicsCommandList7 *CmdList,
-        UINT BufferSize,
-        const void *CPUData,
-        ComPtr<ID3D12Resource2> &DefaultBuffer,
-        ComPtr<ID3D12Resource2> &UploadBuffer
-    );
-
     void UpdateCameraBuffer();
 
 private:
@@ -55,19 +40,11 @@ private:
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
     std::unique_ptr<DXPipeline> Pipeline;
-    
+
     Camera Camera;
     ComPtr<ID3D12Resource2> CameraBuffer_Default;
     ComPtr<ID3D12Resource2> CameraBuffer_Upload;
     D3D12_GPU_VIRTUAL_ADDRESS CameraBufferGPUAddress;
-
-    ComPtr<ID3D12Resource2> VertexBuffer_Default;
-    ComPtr<ID3D12Resource2> VertexBuffer_Upload;
-    D3D12_VERTEX_BUFFER_VIEW VertexBufferView{};
-
-    ComPtr<ID3D12Resource2> IndexBuffer_Default;
-    ComPtr<ID3D12Resource2> IndexBuffer_Upload;
-    D3D12_INDEX_BUFFER_VIEW IndexBufferView{};
 
     Vertex QuadVertices[4] = {
         {-0.5f, -0.5f, 1.0f, 0.0f, 0.0f}, // 0 bottom-left (red)
@@ -84,4 +61,6 @@ private:
         1,
         3 // second triangle
     };
+
+    std::unique_ptr<Mesh<Vertex>> QuadMesh;
 };

@@ -74,6 +74,11 @@ void DXSwapchain::ReleaseBuffers()
     }
 }
 
+void DXSwapchain::UpdateViewportAndScissor() {
+    Viewport = {0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height), 0.0f, 1.0f};
+    ScissorRect = {0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height)};
+}
+
 void DXSwapchain::Resize()
 {
     ReleaseBuffers();
@@ -92,4 +97,5 @@ void DXSwapchain::Resize()
         );
     }
     GetBuffers();
+    UpdateViewportAndScissor();
 }

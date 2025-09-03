@@ -31,24 +31,17 @@ public:
         return Buffers[index].Get();
     }
 
-    inline D3D12_VIEWPORT GetViewport() const
-    {
-        return D3D12_VIEWPORT{0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height), 0.0f, 1.0f};
-    }
-
-    inline D3D12_RECT GetScissorRect() const
-    {
-        return D3D12_RECT{0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height)};
-    }
+    inline const D3D12_VIEWPORT &GetViewport() const { return Viewport; }
+    inline const D3D12_RECT &GetScissorRect() const { return ScissorRect; }
     inline UINT GetCurrentBackBufferIndex() const { return SwapChain3->GetCurrentBackBufferIndex(); }
     inline float GetAspectRatio() const { return static_cast<float>(Width) / static_cast<float>(Height); }
-
 
 private:
     bool Init();
     void ShutDown();
     bool GetBuffers();
     void ReleaseBuffers();
+    void UpdateViewportAndScissor();
 
 private:
     DXContext &ContextRef;
@@ -60,4 +53,7 @@ private:
     HWND HwndRef;
     UINT Height = 1080;
     UINT Width = 1920;
+
+    D3D12_VIEWPORT Viewport{};
+    D3D12_RECT ScissorRect{};
 };

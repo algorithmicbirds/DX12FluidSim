@@ -3,7 +3,7 @@
 include("${CMAKE_CURRENT_SOURCE_DIR}/Scripts/CompileShaders.cmake")
 project(DXD12FluidSim)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 option(PRODUCTION_BUILD "Build in production mode (Changes path of resources )" OFF)
 
