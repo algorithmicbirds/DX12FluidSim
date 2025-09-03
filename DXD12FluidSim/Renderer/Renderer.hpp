@@ -4,7 +4,7 @@
 #include <vector>
 #include "D3D/Vertex.hpp"
 #include <memory>
-#include "D3D/Camera.hpp"
+#include "Renderer/Camera.hpp"
 
 class DXPipeline;
 class DXSwapchain;
