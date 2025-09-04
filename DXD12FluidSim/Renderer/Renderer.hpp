@@ -53,6 +53,7 @@ private:
     void UpdateCameraBuffer();
     void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
     ComPtr<ID3D12RootSignature> CreateComputeRootSig();
+    ComPtr<ID3D12RootSignature> CreateGraphicsRootSig();
     float RotX = 0.0f;
     float RotY = 0.0f;
 
@@ -61,7 +62,7 @@ private:
     ID3D12Device14 &DeviceRef;
     D3D12_VIEWPORT Viewport{};
 
-    std::unique_ptr<DXGraphicsPipeline> Pipeline;
+    std::unique_ptr<DXGraphicsPipeline> GraphicsPipeline;
     std::unique_ptr<DXComputePipeline> ComputePipeline;
 
     Camera Camera;

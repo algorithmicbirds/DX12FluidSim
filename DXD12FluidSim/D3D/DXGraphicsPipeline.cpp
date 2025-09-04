@@ -4,21 +4,19 @@
 #include "DebugLayer/DebugMacros.hpp"
 #include "GlobInclude/Utils.hpp"
 
-DXGraphicsPipeline::DXGraphicsPipeline(
-    ID3D12Device14 &Device, const std::string &VertexShaderFilePath, const std::string &PixelShaderFilePath
-)
-    : DeviceRef(Device)
-{
-    std::vector<char> VertexShaderFile = Utils::ReadFile(VertexShaderFilePath);
-    std::vector<char> PixelShaderFile = Utils::ReadFile(PixelShaderFilePath);
-    CreateGraphicsPipeline(VertexShaderFile, PixelShaderFile);
-}
+DXGraphicsPipeline::DXGraphicsPipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
 
 DXGraphicsPipeline::~DXGraphicsPipeline() {}
 
-void DXGraphicsPipeline::CreateGraphicsPipeline(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode)
+void DXGraphicsPipeline::CreatePipeline(const std::string &VertexShaderFilePath, const std::string &PixelShaderFilePath) {
+    std::vector<char> VertexShaderFile = Utils::ReadFile(VertexShaderFilePath);
+    std::vector<char> PixelShaderFile = Utils::ReadFile(PixelShaderFilePath);
+
+    CreatePipelineState(VertexShaderFile, PixelShaderFile);
+}
+
+void DXGraphicsPipeline::CreatePipelineState(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode)
 {
-    CreateRootSignature();
     D3D12_GRAPHICS_PIPELINE_STATE_DESC GraphicsPSODesc{};
 
     GraphicsPSODesc.InputLayout = Vertex::GetInputLayout();
@@ -55,81 +53,9 @@ void DXGraphicsPipeline::CreateGraphicsPipeline(std::vector<char> &VertexShaderC
     GraphicsPSODesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
     DX_VALIDATE(
-        DeviceRef.CreateGraphicsPipelineState(
-            &GraphicsPSODesc, IID_PPV_ARGS(&PipelineStateObject)
-        ),
-        PipelineStateObject
+        DeviceRef.CreateGraphicsPipelineState(&GraphicsPSODesc, IID_PPV_ARGS(&PipelineStateObject)), PipelineStateObject
     );
 }
-
-
-
-ID3D12RootSignature *DXGraphicsPipeline::CreateRootSignature()
-{
-    ComPtr<ID3DBlob> RootSigBlob;
-    ComPtr<ID3DBlob> RootErrBlob;
-
-    // --- SRV descriptor range (t0) ---
-    D3D12_DESCRIPTOR_RANGE srvRange{};
-    srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    srvRange.NumDescriptors = 1;
-    srvRange.BaseShaderRegister = 0;
-    srvRange.RegisterSpace = 0;
-    srvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    // --- Root parameters ---
-    D3D12_ROOT_PARAMETER RootParam[3] = {};
-
-    // Camera CBV (b0)
-    RootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    RootParam[0].Descriptor.ShaderRegister = 0;
-    RootParam[0].Descriptor.RegisterSpace = 0;
-    RootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-
-    // Model CBV (b1)
-    RootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    RootParam[1].Descriptor.ShaderRegister = 1;
-    RootParam[1].Descriptor.RegisterSpace = 0;
-    RootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-
-    // SRV descriptor table (t0)
-    RootParam[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    RootParam[2].DescriptorTable.NumDescriptorRanges = 1;
-    RootParam[2].DescriptorTable.pDescriptorRanges = &srvRange;
-    RootParam[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-    // --- Static sampler (s0) ---
-    D3D12_STATIC_SAMPLER_DESC SamplerDesc{};
-    SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    SamplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    SamplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    SamplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    SamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-    SamplerDesc.ShaderRegister = 0; 
-    SamplerDesc.RegisterSpace = 0;
-    SamplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-    D3D12_ROOT_SIGNATURE_DESC rootSigDesc{};
-    rootSigDesc.NumParameters = _countof(RootParam);
-    rootSigDesc.pParameters = RootParam;
-    rootSigDesc.NumStaticSamplers = 1;
-    rootSigDesc.pStaticSamplers = &SamplerDesc;
-    rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    DX_VALIDATE(
-        D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &RootSigBlob, &RootErrBlob), RootSigBlob
-    );
-
-    DX_VALIDATE(
-        DeviceRef.CreateRootSignature(
-            0, RootSigBlob->GetBufferPointer(), RootSigBlob->GetBufferSize(), IID_PPV_ARGS(&RootSignature)
-        ),
-        RootSig
-    );
-
-    return RootSignature.Get();
-}
-
 
 D3D12_RASTERIZER_DESC DXGraphicsPipeline::InitRasterizerDesc()
 {
@@ -195,3 +121,8 @@ D3D12_DEPTH_STENCIL_DESC DXGraphicsPipeline::InitDepthStencilDesc()
     DepthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
     return DepthStencilDesc;
 }
+
+void DXGraphicsPipeline::Dispatch(ID3D12GraphicsCommandList7 *CmdList) {
+    CmdList->SetPipelineState(PipelineStateObject.Get());
+    CmdList->SetGraphicsRootSignature(RootSignature.Get());
+};

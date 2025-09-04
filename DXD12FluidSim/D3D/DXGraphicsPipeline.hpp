@@ -7,20 +7,21 @@
 class DXGraphicsPipeline
 {
 public:
-    DXGraphicsPipeline(ID3D12Device14 &Device, const std::string &VertexShaderFilePath, const std::string &PixelShaderFilePath);
+    DXGraphicsPipeline(ID3D12Device14 &Device);
     ~DXGraphicsPipeline();
     DXGraphicsPipeline &operator=(const DXGraphicsPipeline &) = delete;
     DXGraphicsPipeline(const DXGraphicsPipeline &) = delete;
 
 public:
-    inline ID3D12PipelineState *GetPipelineStateObject() const { return PipelineStateObject.Get(); }
-    inline ID3D12RootSignature *GetRootSignature() const { return RootSignature.Get(); }
+    void SetRootSignature(ComPtr<ID3D12RootSignature> InRootSignature) { RootSignature = InRootSignature; }
+    void CreatePipeline(const std::string &VertexShaderPath, const std::string &PixelShaderPath);
+    void Dispatch(ID3D12GraphicsCommandList7 *CmdList);
 
 private:
     bool Init();
-    void CreateGraphicsPipeline(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode);
+    void CreatePipelineState(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode);
+
     // Initializers
-    ID3D12RootSignature *CreateRootSignature();
     D3D12_RASTERIZER_DESC InitRasterizerDesc();
     D3D12_STREAM_OUTPUT_DESC InitStreamOutputDesc();
     D3D12_BLEND_DESC InitBlendDesc();

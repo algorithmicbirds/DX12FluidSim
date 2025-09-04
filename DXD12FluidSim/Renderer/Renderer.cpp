@@ -8,7 +8,9 @@
 
 Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
-    Pipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef, SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
+    GraphicsPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
+    GraphicsPipeline->SetRootSignature(CreateGraphicsRootSig());
+    GraphicsPipeline->CreatePipeline(SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
     ComputePipeline = std::make_unique<DXComputePipeline>(DeviceRef);
     ComputePipeline->SetRootSignature(CreateComputeRootSig());
     ComputePipeline->CreatePipeline(SHADER_PATH "Test_cs.cso", 512, 512, 1);
@@ -45,8 +47,7 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
     );
 
-    CmdList->SetPipelineState(Pipeline->GetPipelineStateObject());
-    CmdList->SetGraphicsRootSignature(Pipeline->GetRootSignature());
+    GraphicsPipeline->Dispatch(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(0, CameraBufferGPUAddress);
     CmdList->SetGraphicsRootDescriptorTable(2, ComputePipeline->GetSRVGPUHandle());
 
@@ -172,5 +173,71 @@ ComPtr<ID3D12RootSignature> Renderer::CreateComputeRootSig()
     return RootSig;
 }
 
+ComPtr<ID3D12RootSignature> Renderer::CreateGraphicsRootSig()
+{
+    ComPtr<ID3DBlob> RootSigBlob;
+    ComPtr<ID3DBlob> RootErrBlob;
+
+    // --- SRV descriptor range (t0) ---
+    D3D12_DESCRIPTOR_RANGE SrvRange{};
+    SrvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    SrvRange.NumDescriptors = 1;
+    SrvRange.BaseShaderRegister = 0;
+    SrvRange.RegisterSpace = 0;
+    SrvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    D3D12_ROOT_PARAMETER RootParam[3] = {};
+
+    // Camera CBV (b0)
+    RootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[0].Descriptor.ShaderRegister = 0;
+    RootParam[0].Descriptor.RegisterSpace = 0;
+    RootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+    // Model CBV (b1)
+    RootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[1].Descriptor.ShaderRegister = 1;
+    RootParam[1].Descriptor.RegisterSpace = 0;
+    RootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+    // SRV descriptor table (t0)
+    RootParam[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    RootParam[2].DescriptorTable.NumDescriptorRanges = 1;
+    RootParam[2].DescriptorTable.pDescriptorRanges = &SrvRange;
+    RootParam[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    // --- Static sampler (s0) ---
+    D3D12_STATIC_SAMPLER_DESC SamplerDesc{};
+    SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    SamplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    SamplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    SamplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    SamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    SamplerDesc.ShaderRegister = 0;
+    SamplerDesc.RegisterSpace = 0;
+    SamplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    D3D12_ROOT_SIGNATURE_DESC RootSigDesc{};
+    RootSigDesc.NumParameters = _countof(RootParam);
+    RootSigDesc.pParameters = RootParam;
+    RootSigDesc.NumStaticSamplers = 1;
+    RootSigDesc.pStaticSamplers = &SamplerDesc;
+    RootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    DX_VALIDATE(
+        D3D12SerializeRootSignature(&RootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &RootSigBlob, &RootErrBlob), RootSigBlob
+    );
+
+    ComPtr<ID3D12RootSignature> RootSignature;
+
+    DX_VALIDATE(
+        DeviceRef.CreateRootSignature(
+            0, RootSigBlob->GetBufferPointer(), RootSigBlob->GetBufferSize(), IID_PPV_ARGS(&RootSignature)
+        ),
+        RootSignature
+    );
+
+    return RootSignature;
+}
 
 void Renderer::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }
