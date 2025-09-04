@@ -16,6 +16,7 @@ struct GameObjectGPUData
 {
     ComPtr<ID3D12Resource2> TransformBuffer_Default;
     ComPtr<ID3D12Resource2> TransformBuffer_Upload;
+    void *MappedPtr = nullptr;
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
@@ -42,15 +43,21 @@ public:
     void EndFrame(ID3D12GraphicsCommandList7 *CmdList);
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
     void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
+    void OnResize(float NewAspectRatio);
+    void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
+  
 
 private:
     void Init();
     void UpdateCameraBuffer();
     void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
+    float RotX = 0.0f;
+    float RotY = 0.0f;
 
 private:
     DXSwapchain &SwapchainRef;
     ID3D12Device14 &DeviceRef;
+    D3D12_VIEWPORT Viewport{};
 
     std::unique_ptr<DXPipeline> Pipeline;
 

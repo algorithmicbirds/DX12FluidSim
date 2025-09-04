@@ -47,7 +47,7 @@ void DXPipeline::CreateGraphicsPipeline(std::vector<char> &VertexShaderCode, std
 
     GraphicsPSODesc.NumRenderTargets = 1;
     GraphicsPSODesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    GraphicsPSODesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+    GraphicsPSODesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
     GraphicsPSODesc.CachedPSO.CachedBlobSizeInBytes = 0;
     GraphicsPSODesc.CachedPSO.pCachedBlob = nullptr;

@@ -9,7 +9,7 @@ Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRe
 {
     Pipeline = std::make_unique<DXPipeline>(DeviceRef, SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
 }
-Renderer::~Renderer() {  }
+Renderer::~Renderer() {}
 
 void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
@@ -20,15 +20,21 @@ void Renderer::BeginFrame(ID3D12GraphicsCommandList7 *CmdList)
     Utils::TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     float ClearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
-
+    float ClearDepth = 1.0f;
     D3D12_CPU_DESCRIPTOR_HANDLE RTVHandle = SwapchainRef.GetCurrentRTVHandle();
 
     CmdList->ClearRenderTargetView(RTVHandle, ClearColor, 0, nullptr);
-    CmdList->OMSetRenderTargets(1, &RTVHandle, false, nullptr);
+    CmdList->OMSetRenderTargets(1, &RTVHandle, FALSE, &SwapchainRef.GetCurrentDSVHandle());
+    CmdList->ClearDepthStencilView(
+        SwapchainRef.GetCurrentDSVHandle(), D3D12_CLEAR_FLAG_DEPTH, ClearDepth, 0, 0, nullptr
+    );
     CmdList->SetPipelineState(Pipeline->GetPipelineStateObject());
     CmdList->SetGraphicsRootSignature(Pipeline->GetRootSignature());
     CmdList->SetGraphicsRootConstantBufferView(0, CameraBufferGPUAddress);
-    CmdList->RSSetViewports(1, &SwapchainRef.GetViewport());
+  
+    CmdList->RSSetViewports(1, &Viewport);
+
+    CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
     RenderGameObject(CmdList);
 }
@@ -39,8 +45,6 @@ void Renderer::EndFrame(ID3D12GraphicsCommandList7 *CmdList)
     VALIDATE_PTR(CurrentBuffer);
     Utils::TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 }
-
-
 
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
@@ -60,7 +64,6 @@ void Renderer::UpdateCameraBuffer()
 {
     CameraBufferConstants CBData;
     CBData.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
-
     void *mapped = nullptr;
     CameraBuffer_Upload->Map(0, nullptr, &mapped);
     memcpy(mapped, &CBData, sizeof(CBData));
@@ -70,36 +73,43 @@ void Renderer::UpdateCameraBuffer()
 void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList)
 {
     GameObj->Transform.UpdateMatrix();
-    TransformConstants CBData{};
-    CBData.ModelMatrix = GameObj->Transform.ModelMatrix;
+    TransformConstants CBData{GameObj->Transform.ModelMatrix};
 
     UINT CBSize = (sizeof(TransformConstants) + 255) & ~255;
 
     GameObjectGPUData Data;
-    Utils::CreateUploadBuffer(
-        DeviceRef, CmdList, CBSize, &CBData, Data.TransformBuffer_Default, Data.TransformBuffer_Upload
-    );
+    Utils::CreateDynamicUploadBuffer(DeviceRef, CBSize, Data.TransformBuffer_Upload, Data.MappedPtr);
 
-    Data.GPUAddress = Data.TransformBuffer_Default->GetGPUVirtualAddress();
+    memcpy(Data.MappedPtr, &CBData, sizeof(CBData));
+    Data.GPUAddress = Data.TransformBuffer_Upload->GetGPUVirtualAddress();
+
     GameObjectResources[GameObj] = std::move(Data);
     RegisteredObjects.push_back(GameObj);
 }
 
-void Renderer::RenderGameObject(ID3D12GraphicsCommandList7* CmdList) {
-    for (auto *OBJ : RegisteredObjects) 
+
+
+void Renderer::RenderGameObject(ID3D12GraphicsCommandList7 *CmdList)
+{
+    for (auto *OBJ : RegisteredObjects)
     {
+        OBJ->Transform.UpdateMatrix();
+        RotX += 0.01f;
+        RotY += 0.01f;
+
+        OBJ->Transform.Rotation = {RotX, RotY, 0.0f};
         OBJ->Transform.UpdateMatrix();
 
         auto &Data = GameObjectResources[OBJ];
         TransformConstants CBData{OBJ->Transform.ModelMatrix};
 
-        void *mapped = nullptr;
-        Data.TransformBuffer_Upload->Map(0, nullptr, &mapped);
-        memcpy(mapped, &CBData, sizeof(CBData));
-        Data.TransformBuffer_Upload->Unmap(0, nullptr);
+        memcpy(Data.MappedPtr, &CBData, sizeof(CBData));
 
-        CmdList->SetGraphicsRootConstantBufferView(1, Data.GPUAddress); 
+        CmdList->SetGraphicsRootConstantBufferView(1, Data.GPUAddress);
         OBJ->Mesh->Bind(CmdList);
         CmdList->DrawIndexedInstanced(OBJ->Mesh->GetIndexCount(), 1, 0, 0, 0);
     }
 }
+
+
+void Renderer::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }

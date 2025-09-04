@@ -43,6 +43,8 @@ bool DXSwapchain::Init()
 
     GetBuffers();
     CreateRTVAndDescHeap();
+    CreateDSV();
+    CreateDepthStencilBuffer();
     return true;
 }
 
@@ -98,12 +100,15 @@ void DXSwapchain::Resize()
     }
     GetBuffers();
     CreateRTVAndDescHeap();
+    CreateDSV();
+    CreateDepthStencilBuffer();
     UpdateViewportAndScissor();
 }
 
 void DXSwapchain::CreateRTVAndDescHeap()
 {
     ReleaseRTVHeaps();
+    ReleaseDSV();
     D3D12_DESCRIPTOR_HEAP_DESC DescHeapDesc;
     DescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     DescHeapDesc.NumDescriptors = GetFrameCount();
@@ -137,4 +142,60 @@ void DXSwapchain::ReleaseRTVHeaps()
 {
     RTVDescHeap.Reset();
     RTVHandles.clear();
+}
+
+void DXSwapchain::CreateDSV() {
+    D3D12_DESCRIPTOR_HEAP_DESC DSVHeapDesc{};
+    DSVHeapDesc.NumDescriptors = 1;
+    DSVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    DSVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    DX_VALIDATE(ContextRef.GetDevice()->CreateDescriptorHeap(&DSVHeapDesc, IID_PPV_ARGS(&DSVHeap)), DSVHeap);
+
+    DSVHandle = DSVHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+void DXSwapchain::CreateDepthStencilBuffer()
+{
+    D3D12_RESOURCE_DESC DepthDesc{};
+    DepthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    DepthDesc.Width = Width;
+    DepthDesc.Height = Height;
+    DepthDesc.DepthOrArraySize = 1;
+    DepthDesc.MipLevels = 1;
+    DepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    DepthDesc.SampleDesc.Count = 1;
+    DepthDesc.SampleDesc.Quality = 0;
+    DepthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    DepthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+    D3D12_CLEAR_VALUE ClearValue{};
+    ClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+    ClearValue.DepthStencil.Depth = 1.0f;
+    ClearValue.DepthStencil.Stencil = 0;
+
+    D3D12_HEAP_PROPERTIES HeapProps{};
+    HeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+    HeapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    HeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    HeapProps.CreationNodeMask = 1;
+    HeapProps.VisibleNodeMask = 1;
+
+    DX_VALIDATE(
+        ContextRef.GetDevice()->CreateCommittedResource(
+            &HeapProps,
+            D3D12_HEAP_FLAG_NONE,
+            &DepthDesc,
+            D3D12_RESOURCE_STATE_DEPTH_WRITE,
+            &ClearValue,
+            IID_PPV_ARGS(&DepthStencilBuffer)
+        ),
+        DepthStencilBuffer
+    );
+
+    ContextRef.GetDevice()->CreateDepthStencilView(DepthStencilBuffer.Get(), nullptr, DSVHandle);
+}
+
+void DXSwapchain::ReleaseDSV() {
+    DepthStencilBuffer.Reset();
+    DSVHeap.Reset();
 }

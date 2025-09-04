@@ -24,4 +24,7 @@ void CreateUploadBuffer(
     ComPtr<ID3D12Resource2> &DefaultBuffer,
     ComPtr<ID3D12Resource2> &UploadBuffer
 );
+void CreateDynamicUploadBuffer(
+    ID3D12Device14 &Device, UINT BufferSize, ComPtr<ID3D12Resource2> &UploadBuffer, void *&MappedPtr
+);
 } // namespace Utils

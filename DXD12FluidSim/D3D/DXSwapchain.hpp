@@ -38,11 +38,13 @@ public:
     inline const D3D12_RECT &GetScissorRect() const { return ScissorRect; }
     inline UINT GetCurrentBackBufferIndex() const { return SwapChain3->GetCurrentBackBufferIndex(); }
     inline float GetAspectRatio() const { return static_cast<float>(Width) / static_cast<float>(Height); }
-    inline D3D12_CPU_DESCRIPTOR_HANDLE& GetCurrentRTVHandle()
+    inline D3D12_CPU_DESCRIPTOR_HANDLE &GetCurrentRTVHandle()
     {
-  
         return RTVHandles.at(SwapChain3->GetCurrentBackBufferIndex());
     }
+    inline D3D12_CPU_DESCRIPTOR_HANDLE &GetCurrentDSVHandle() { return DSVHandle; }
+    inline UINT GetHeight() const { return Height; }
+    inline UINT GetWidth() const { return Width; }
 
 private:
     bool Init();
@@ -52,6 +54,9 @@ private:
     void UpdateViewportAndScissor();
     void CreateRTVAndDescHeap();
     void ReleaseRTVHeaps();
+    void CreateDSV();
+    void CreateDepthStencilBuffer();
+    void ReleaseDSV();
 
 private:
     DXContext &ContextRef;
@@ -60,9 +65,12 @@ private:
     ComPtr<IDXGIFactory7> DXGIFactory;
     ComPtr<ID3D12Resource2> DepthBuffer;
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
+    ComPtr<ID3D12Resource2> Buffers[FrameCount];
+    ComPtr<ID3D12Resource1> DepthStencilBuffer;
+    ComPtr<ID3D12DescriptorHeap> DSVHeap;
+    D3D12_CPU_DESCRIPTOR_HANDLE DSVHandle;
+
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
-    ComPtr<ID3D12Resource1> Buffers[FrameCount];
-    UINT CurrentBackBufferIndex = 0;
     HWND HwndRef;
     UINT Height = 1080;
     UINT Width = 1920;
