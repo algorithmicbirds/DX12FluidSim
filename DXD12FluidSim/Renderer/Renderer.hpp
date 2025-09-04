@@ -9,8 +9,9 @@
 #include "Renderer/GameObject.hpp"
 #include <unordered_map>
 
-class DXPipeline;
+class DXGraphicsPipeline;
 class DXSwapchain;
+class DXComputePipeline;
 
 struct GameObjectGPUData
 {
@@ -51,6 +52,7 @@ private:
     void Init();
     void UpdateCameraBuffer();
     void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
+    ComPtr<ID3D12RootSignature> CreateComputeRootSig();
     float RotX = 0.0f;
     float RotY = 0.0f;
 
@@ -59,7 +61,8 @@ private:
     ID3D12Device14 &DeviceRef;
     D3D12_VIEWPORT Viewport{};
 
-    std::unique_ptr<DXPipeline> Pipeline;
+    std::unique_ptr<DXGraphicsPipeline> Pipeline;
+    std::unique_ptr<DXComputePipeline> ComputePipeline;
 
     Camera Camera;
     ComPtr<ID3D12Resource2> CameraBuffer_Default;

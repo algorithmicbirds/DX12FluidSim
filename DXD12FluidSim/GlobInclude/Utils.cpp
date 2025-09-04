@@ -1,6 +1,6 @@
 #include "GlobInclude/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
-
+#include <fstream>
 namespace Utils
 {
 void TransitionResoure(
@@ -22,7 +22,8 @@ ComPtr<ID3D12Resource2> CreateBuffer(
     ID3D12Device14 &Device,
     UINT64 SizeOfBufferInBytes,
     D3D12_HEAP_TYPE HeapType,
-    D3D12_RESOURCE_STATES InitialResourceState
+    D3D12_RESOURCE_STATES InitialResourceState,
+    D3D12_RESOURCE_FLAGS Flags
 )
 {
     D3D12_HEAP_PROPERTIES HeapProps{};
@@ -61,11 +62,13 @@ void CreateUploadBuffer(
     UINT BufferSize,
     const void *CPUData,
     ComPtr<ID3D12Resource2> &DefaultBuffer,
-    ComPtr<ID3D12Resource2> &UploadBuffer
+    ComPtr<ID3D12Resource2> &UploadBuffer,
+    D3D12_RESOURCE_FLAGS Flag,
+    D3D12_RESOURCE_STATES InitialResourceState
 )
 {
-    DefaultBuffer = CreateBuffer(Device, BufferSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON);
-    UploadBuffer = CreateBuffer(Device, BufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_RESOURCE_STATE_COMMON);
+    DefaultBuffer = CreateBuffer(Device, BufferSize, D3D12_HEAP_TYPE_DEFAULT, InitialResourceState, Flag);
+    UploadBuffer = CreateBuffer(Device, BufferSize, D3D12_HEAP_TYPE_GPU_UPLOAD, InitialResourceState, Flag);
 
     TransitionResoure(CmdList, DefaultBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
     void *mappedData = nullptr;
@@ -100,5 +103,21 @@ void CreateDynamicUploadBuffer(
 
     UploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&MappedPtr));
 }
+std::vector<char> ReadFile(const std::string &FilePath)
+{
+    std::ifstream File{FilePath, std::ios::ate | std::ios::binary};
+    if (!File.is_open())
+    {
+        throw std::runtime_error("File failed to open");
+    }
 
+    size_t FileSize = static_cast<size_t>(File.tellg());
+    std::vector<char> Buffer(FileSize);
+    File.seekg(0);
+    File.read(Buffer.data(), FileSize);
+    File.close();
+
+    return Buffer;
 }
+}
+

@@ -1,21 +1,22 @@
-#include "D3D/DXPipeline.hpp"
+#include "D3D/DXGraphicsPipeline.hpp"
 #include "Vertex.hpp"
 #include <fstream>
 #include "DebugLayer/DebugMacros.hpp"
+#include "GlobInclude/Utils.hpp"
 
-DXPipeline::DXPipeline(
+DXGraphicsPipeline::DXGraphicsPipeline(
     ID3D12Device14 &Device, const std::string &VertexShaderFilePath, const std::string &PixelShaderFilePath
 )
     : DeviceRef(Device)
 {
-    std::vector<char> VertexShaderFile = ReadFile(VertexShaderFilePath);
-    std::vector<char> PixelShaderFile = ReadFile(PixelShaderFilePath);
+    std::vector<char> VertexShaderFile = Utils::ReadFile(VertexShaderFilePath);
+    std::vector<char> PixelShaderFile = Utils::ReadFile(PixelShaderFilePath);
     CreateGraphicsPipeline(VertexShaderFile, PixelShaderFile);
 }
 
-DXPipeline::~DXPipeline() {}
+DXGraphicsPipeline::~DXGraphicsPipeline() {}
 
-void DXPipeline::CreateGraphicsPipeline(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode)
+void DXGraphicsPipeline::CreateGraphicsPipeline(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode)
 {
     CreateRootSignature();
     D3D12_GRAPHICS_PIPELINE_STATE_DESC GraphicsPSODesc{};
@@ -61,51 +62,62 @@ void DXPipeline::CreateGraphicsPipeline(std::vector<char> &VertexShaderCode, std
     );
 }
 
-std::vector<char> DXPipeline::ReadFile(const std::string &FilePath)
-{
-    std::ifstream File{FilePath, std::ios::ate | std::ios::binary};
-    if (!File.is_open())
-    {
-        throw std::runtime_error("File failed to open");
-    }
 
-    size_t FileSize = static_cast<size_t>(File.tellg());
-    std::vector<char> Buffer(FileSize);
-    File.seekg(0);
-    File.read(Buffer.data(), FileSize);
-    File.close();
 
-    return Buffer;
-}
-
-ID3D12RootSignature *DXPipeline::CreateRootSignature()
+ID3D12RootSignature *DXGraphicsPipeline::CreateRootSignature()
 {
     ComPtr<ID3DBlob> RootSigBlob;
     ComPtr<ID3DBlob> RootErrBlob;
 
-    D3D12_ROOT_PARAMETER RootParam[2] = {};
-    // Camera buffer(b0)
+    // --- SRV descriptor range (t0) ---
+    D3D12_DESCRIPTOR_RANGE srvRange{};
+    srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    srvRange.NumDescriptors = 1;
+    srvRange.BaseShaderRegister = 0;
+    srvRange.RegisterSpace = 0;
+    srvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    // --- Root parameters ---
+    D3D12_ROOT_PARAMETER RootParam[3] = {};
+
+    // Camera CBV (b0)
     RootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    RootParam[0].Descriptor.ShaderRegister = 0; 
+    RootParam[0].Descriptor.ShaderRegister = 0;
     RootParam[0].Descriptor.RegisterSpace = 0;
     RootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    
-    // Model Transform(b1)
+
+    // Model CBV (b1)
     RootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    RootParam[1].Descriptor.ShaderRegister = 1; 
+    RootParam[1].Descriptor.ShaderRegister = 1;
     RootParam[1].Descriptor.RegisterSpace = 0;
     RootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
+    // SRV descriptor table (t0)
+    RootParam[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    RootParam[2].DescriptorTable.NumDescriptorRanges = 1;
+    RootParam[2].DescriptorTable.pDescriptorRanges = &srvRange;
+    RootParam[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-    D3D12_ROOT_SIGNATURE_DESC RootSigDesc{};
-    RootSigDesc.NumParameters = _countof(RootParam);
-    RootSigDesc.pParameters = RootParam;
-    RootSigDesc.NumStaticSamplers = 0;
-    RootSigDesc.pStaticSamplers = nullptr;
-    RootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    // --- Static sampler (s0) ---
+    D3D12_STATIC_SAMPLER_DESC SamplerDesc{};
+    SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    SamplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    SamplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    SamplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    SamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    SamplerDesc.ShaderRegister = 0; 
+    SamplerDesc.RegisterSpace = 0;
+    SamplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    D3D12_ROOT_SIGNATURE_DESC rootSigDesc{};
+    rootSigDesc.NumParameters = _countof(RootParam);
+    rootSigDesc.pParameters = RootParam;
+    rootSigDesc.NumStaticSamplers = 1;
+    rootSigDesc.pStaticSamplers = &SamplerDesc;
+    rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     DX_VALIDATE(
-        D3D12SerializeRootSignature(&RootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &RootSigBlob, &RootErrBlob), RootSigBlob
+        D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &RootSigBlob, &RootErrBlob), RootSigBlob
     );
 
     DX_VALIDATE(
@@ -118,7 +130,8 @@ ID3D12RootSignature *DXPipeline::CreateRootSignature()
     return RootSignature.Get();
 }
 
-D3D12_RASTERIZER_DESC DXPipeline::InitRasterizerDesc()
+
+D3D12_RASTERIZER_DESC DXGraphicsPipeline::InitRasterizerDesc()
 {
     D3D12_RASTERIZER_DESC RasterizerDesc{};
     RasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
@@ -134,7 +147,7 @@ D3D12_RASTERIZER_DESC DXPipeline::InitRasterizerDesc()
     return RasterizerDesc;
 }
 
-D3D12_STREAM_OUTPUT_DESC DXPipeline::InitStreamOutputDesc()
+D3D12_STREAM_OUTPUT_DESC DXGraphicsPipeline::InitStreamOutputDesc()
 {
     D3D12_STREAM_OUTPUT_DESC StreamOutPutDesc{};
     StreamOutPutDesc.NumEntries = 0;
@@ -145,7 +158,7 @@ D3D12_STREAM_OUTPUT_DESC DXPipeline::InitStreamOutputDesc()
     return StreamOutPutDesc;
 }
 
-D3D12_BLEND_DESC DXPipeline::InitBlendDesc()
+D3D12_BLEND_DESC DXGraphicsPipeline::InitBlendDesc()
 {
     D3D12_BLEND_DESC BlendDesc{};
     BlendDesc.AlphaToCoverageEnable = FALSE;
@@ -163,7 +176,7 @@ D3D12_BLEND_DESC DXPipeline::InitBlendDesc()
     return BlendDesc;
 }
 
-D3D12_DEPTH_STENCIL_DESC DXPipeline::InitDepthStencilDesc()
+D3D12_DEPTH_STENCIL_DESC DXGraphicsPipeline::InitDepthStencilDesc()
 {
     D3D12_DEPTH_STENCIL_DESC DepthStencilDesc{};
     DepthStencilDesc.DepthEnable = TRUE;

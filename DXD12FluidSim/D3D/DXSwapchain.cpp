@@ -41,10 +41,7 @@ bool DXSwapchain::Init()
     DX_VALIDATE(SwapChain1->QueryInterface(IID_PPV_ARGS(&SwapChain3)), SwapChain3);
 
 
-    GetBuffers();
-    CreateRTVAndDescHeap();
-    CreateDSV();
-    CreateDepthStencilBuffer();
+    InitializeViews();
     return true;
 }
 
@@ -98,17 +95,12 @@ void DXSwapchain::Resize()
             DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING
         );
     }
-    GetBuffers();
-    CreateRTVAndDescHeap();
-    CreateDSV();
-    CreateDepthStencilBuffer();
+    InitializeViews();
     UpdateViewportAndScissor();
 }
 
 void DXSwapchain::CreateRTVAndDescHeap()
 {
-    ReleaseRTVHeaps();
-    ReleaseDSV();
     D3D12_DESCRIPTOR_HEAP_DESC DescHeapDesc;
     DescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     DescHeapDesc.NumDescriptors = GetFrameCount();
@@ -119,12 +111,12 @@ void DXSwapchain::CreateRTVAndDescHeap()
     RTVHandles.resize(FrameCount);
     D3D12_CPU_DESCRIPTOR_HANDLE FirstCPUDescHandle = RTVDescHeap->GetCPUDescriptorHandleForHeapStart();
     UINT HandleIncrement = ContextRef.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    for (size_t i = 0; i < GetFrameCount(); ++i)
+    for (size_t i = 0; i < FrameCount; ++i)
     {
         RTVHandles.at(i) = FirstCPUDescHandle;
         RTVHandles.at(i).ptr += HandleIncrement * i;
     }
-    for (size_t i = 0; i < GetFrameCount(); ++i)
+    for (size_t i = 0; i < FrameCount; ++i)
     {
         VALIDATE_PTR(RTVDescHeap);
         ID3D12Resource1 *buffer = GetBuffer(i);
@@ -198,4 +190,14 @@ void DXSwapchain::CreateDepthStencilBuffer()
 void DXSwapchain::ReleaseDSV() {
     DepthStencilBuffer.Reset();
     DSVHeap.Reset();
+}
+
+void DXSwapchain::InitializeViews()
+{
+    ReleaseDSV();
+    ReleaseRTVHeaps();
+    GetBuffers();
+    CreateRTVAndDescHeap();
+    CreateDSV();
+    CreateDepthStencilBuffer();
 }

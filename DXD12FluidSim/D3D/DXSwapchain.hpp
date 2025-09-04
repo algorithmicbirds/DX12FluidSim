@@ -57,6 +57,7 @@ private:
     void CreateDSV();
     void CreateDepthStencilBuffer();
     void ReleaseDSV();
+    void InitializeViews();
 
 private:
     DXContext &ContextRef;

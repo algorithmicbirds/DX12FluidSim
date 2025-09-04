@@ -4,13 +4,13 @@
 #include <vector>
 #include <string>
 
-class DXPipeline
+class DXGraphicsPipeline
 {
 public:
-    DXPipeline(ID3D12Device14 &Device, const std::string &VertexShaderFilePath, const std::string &PixelShaderFilePath);
-    ~DXPipeline();
-    DXPipeline &operator=(const DXPipeline &) = delete;
-    DXPipeline(const DXPipeline &) = delete;
+    DXGraphicsPipeline(ID3D12Device14 &Device, const std::string &VertexShaderFilePath, const std::string &PixelShaderFilePath);
+    ~DXGraphicsPipeline();
+    DXGraphicsPipeline &operator=(const DXGraphicsPipeline &) = delete;
+    DXGraphicsPipeline(const DXGraphicsPipeline &) = delete;
 
 public:
     inline ID3D12PipelineState *GetPipelineStateObject() const { return PipelineStateObject.Get(); }
@@ -19,7 +19,6 @@ public:
 private:
     bool Init();
     void CreateGraphicsPipeline(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode);
-    std::vector<char> ReadFile(const std::string &FilePath);
     // Initializers
     ID3D12RootSignature *CreateRootSignature();
     D3D12_RASTERIZER_DESC InitRasterizerDesc();

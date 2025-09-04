@@ -6,6 +6,9 @@
 #include "Renderer/Renderer.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 
+
+
+#ifdef _DEBUG
 void InitConsole()
 {
     AllocConsole();
@@ -20,6 +23,7 @@ void InitConsole()
     std::cerr.clear();
     std::cin.clear();
 }
+#endif // _DEBUG
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 {
