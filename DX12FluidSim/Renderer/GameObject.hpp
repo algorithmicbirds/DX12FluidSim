@@ -47,9 +47,9 @@ public:
 public:
     Transform Transform;
 
-    // Currently bound to Mesh<Vertex>.
-    // Generalize to support multiple vertex types (via templates or a common base) later.
-    std::shared_ptr<Mesh<Vertex>> Mesh;
+    std::shared_ptr<CPUMeshBase> CPUMesh;
+    std::shared_ptr<GPUMesh> GPUMesh;
+
 
 
 private:

@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.8)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/Scripts/CompileShaders.cmake")
-project(DXD12FluidSim)
+project(DX12FluidSim)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -17,13 +17,20 @@ if (POLICY CMP0141)
     )
 endif()
 
+#plan to add noesis later
+#set(NOESIS_SDK_DIR "F:/NoesisGUI-NativeSDK-win-3.2.8-Indie")
+#include_directories(${NOESIS_SDK_DIR}/Include)
+#link_directories(${NOESIS_SDK_DIR}/Lib/windows_x86_64)
+
+
+
 
 file(GLOB_RECURSE DX_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/DXD12FluidSim/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/DX12FluidSim/*.cpp"
 )
 
 file(GLOB_RECURSE DX_HEADERS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/DXD12FluidSim/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/DX12FluidSim/*.hpp"
 )
 
 add_executable(${PROJECT_NAME}
@@ -46,7 +53,7 @@ endif()
 
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/DXD12FluidSim"
+    "${CMAKE_CURRENT_SOURCE_DIR}/DX12FluidSim"
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

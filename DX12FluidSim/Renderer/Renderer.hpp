@@ -40,8 +40,7 @@ public:
     Renderer(const Renderer &) = delete;
 
 public:
-    void BeginFrame(ID3D12GraphicsCommandList7 *CmdList);
-    void EndFrame(ID3D12GraphicsCommandList7 *CmdList);
+    void RenderFrame(ID3D12GraphicsCommandList7 *CmdList);
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
     void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
     void OnResize(float NewAspectRatio);
@@ -49,13 +48,8 @@ public:
   
 
 private:
-    void Init();
     void UpdateCameraBuffer();
     void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
-    ComPtr<ID3D12RootSignature> CreateComputeRootSig();
-    ComPtr<ID3D12RootSignature> CreateGraphicsRootSig();
-    float RotX = 0.0f;
-    float RotY = 0.0f;
 
 private:
     DXSwapchain &SwapchainRef;

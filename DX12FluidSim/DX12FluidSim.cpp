@@ -5,8 +5,8 @@
 #include "Window/Window.hpp"
 #include "Renderer/Renderer.hpp"
 #include "DebugLayer/DebugMacros.hpp"
-
-
+#include "Renderer/Scene.hpp"
+#include "FluidSimulation/FluidSimulation.hpp"
 
 #ifdef _DEBUG
 void InitConsole()
@@ -42,6 +42,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList();
 
         Renderer.InitializeBuffers(CmdList);
+
         Vertex CubeVertices[8] = {
             {-0.5f, -0.5f, -0.5f, 1,    0,    0   }, 
             {0.5f,  -0.5f, -0.5f, 0,    1,    0   }, 
@@ -56,14 +57,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         uint16_t CubeIndices[36] = {4, 5, 6, 4, 6, 7, 0, 2, 1, 0, 3, 2, 0, 7, 3, 0, 4, 7,
                                     1, 2, 6, 1, 6, 5, 3, 7, 6, 3, 6, 2, 0, 1, 5, 0, 5, 4};
 
-        auto CubeObj = std::make_unique<GameObject>(GameObject::CreateGameObject());
-        auto CubeMesh = std::make_shared<Mesh<Vertex>>(*Context.GetDevice(), CmdList, CubeVertices, CubeIndices);
-        CubeObj->Mesh = CubeMesh;
-        CubeObj->Transform.Rotation = {2.0f, 1.0f, 0.0f};
-        Renderer.RegisterGameObject(CubeObj.get(), CmdList);
+        Scene Scene{Renderer, *Context.GetDevice()};
 
-        float rotX = 0.0f, rotY = 0.0f;
+        FluidSimulation FluidSim{Scene};
 
+        Scene.FlushToRenderer(CmdList);
+        
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
         {
@@ -103,10 +102,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
                 Renderer.SetViewport(VP);
             }
 
-
             CmdList = Context.InitCmdList();
-            Renderer.BeginFrame(CmdList);
-            Renderer.EndFrame(CmdList);
+            Renderer.RenderFrame(CmdList);
             Context.DispatchCmdList();
             Swapchain.Present();
         }
