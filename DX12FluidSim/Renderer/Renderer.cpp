@@ -9,9 +9,14 @@
 
 Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
-    GraphicsPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
-    GraphicsPipeline->SetRootSignature(RootSignature::CreateGraphicsRootSig(Device));
-    GraphicsPipeline->CreatePipeline(SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
+    CirclePipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
+    CirclePipeline->SetRootSignature(RootSignature::CreateGraphicsRootSig(Device));
+    CirclePipeline->CreatePipeline(SHADER_PATH "Circle/Circle_vs.cso", SHADER_PATH "Circle/Circle_ps.cso");
+   
+    MeshPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
+    MeshPipeline->SetRootSignature(RootSignature::CreateGraphicsRootSig(Device));
+    MeshPipeline->CreatePipeline(SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
+
     ComputePipeline = std::make_unique<DXComputePipeline>(DeviceRef);
     ComputePipeline->SetRootSignature(RootSignature::CreateComputeRootSig(Device));
     ComputePipeline->CreatePipeline(SHADER_PATH "Test_cs.cso", 512, 512, 1);
@@ -38,7 +43,8 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList)
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS
     );
 
-    ComputePipeline->Dispatch(CmdList);
+    MeshPipeline->Dispatch(CmdList);
+    CirclePipeline->Dispatch(CmdList);
 
     Utils::TransitionResoure(
         CmdList,
@@ -47,7 +53,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList)
         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
     );
 
-    GraphicsPipeline->Dispatch(CmdList);
+    ComputePipeline->Dispatch(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(0, CameraBufferGPUAddress);
     CmdList->SetGraphicsRootDescriptorTable(2, ComputePipeline->GetSRVGPUHandle());
 
@@ -86,17 +92,16 @@ void Renderer::UpdateCameraBuffer()
 void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList)
 {
     GameObj->Transform.UpdateMatrix();
+    DirectX::XMFLOAT4X4 ModelMatrix = GameObj->Transform.ModelMatrix;
     TransformConstants CBData{GameObj->Transform.ModelMatrix};
 
     UINT CBSize = (sizeof(TransformConstants) + 255) & ~255;
 
     GameObjectGPUData Data;
-   // Utils::CreateDynamicUploadBuffer(DeviceRef, CBSize, Data.TransformBuffer_Upload, Data.MappedPtr);
     Utils::CreateUploadBuffer(
         DeviceRef, CmdList, CBSize, &CBData, Data.TransformBuffer_Default, Data.TransformBuffer_Upload
     );
 
-    //memcpy(Data.MappedPtr, &CBData, sizeof(CBData));
     Data.GPUAddress = Data.TransformBuffer_Upload->GetGPUVirtualAddress();
 
     GameObjectResources[GameObj] = std::move(Data);
@@ -110,15 +115,9 @@ void Renderer::RenderGameObject(ID3D12GraphicsCommandList7 *CmdList)
     for (auto *OBJ : RegisteredObjects)
     {
         OBJ->Transform.UpdateMatrix();
-
+        OBJ->Pipeline->Dispatch(CmdList);
         auto &Data = GameObjectResources[OBJ];
         TransformConstants CBData{OBJ->Transform.ModelMatrix};
-         //void *mapped = nullptr;
-       /* Data.TransformBuffer_Upload->Map(0, nullptr, &mapped);
-        memcpy(mapped, &CBData, sizeof(CBData));
-        Data.TransformBuffer_Upload->Unmap(0, nullptr);*/
-        //memcpy(Data.MappedPtr, &CBData, sizeof(CBData));
-
         CmdList->SetGraphicsRootConstantBufferView(1, Data.GPUAddress);
         OBJ->GPUMesh->Bind(CmdList);
         CmdList->DrawIndexedInstanced(OBJ->GPUMesh->GetIndexCount(), 1, 0, 0, 0);

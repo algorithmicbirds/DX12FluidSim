@@ -46,6 +46,8 @@ public:
     void OnResize(float NewAspectRatio);
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
   
+    inline DXGraphicsPipeline *GetCirclePipeline() { return CirclePipeline.get(); }
+    inline DXGraphicsPipeline *GetMeshPipeline() { return MeshPipeline.get(); }
 
 private:
     void UpdateCameraBuffer();
@@ -56,7 +58,8 @@ private:
     ID3D12Device14 &DeviceRef;
     D3D12_VIEWPORT Viewport{};
 
-    std::unique_ptr<DXGraphicsPipeline> GraphicsPipeline;
+    std::unique_ptr<DXGraphicsPipeline> CirclePipeline;
+    std::unique_ptr<DXGraphicsPipeline> MeshPipeline;
     std::unique_ptr<DXComputePipeline> ComputePipeline;
 
     Camera Camera;

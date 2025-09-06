@@ -4,6 +4,7 @@
 #include "Renderer/Mesh.hpp"
 #include <memory>
 #include "D3D/Vertex.hpp"
+#include "D3D/DXGraphicsPipeline.hpp"
 
 struct Transform
 {
@@ -50,7 +51,7 @@ public:
     std::shared_ptr<CPUMeshBase> CPUMesh;
     std::shared_ptr<GPUMesh> GPUMesh;
 
-
+     DXGraphicsPipeline *Pipeline = nullptr;
 
 private:
     GameObject(id_t ObjectId) : ID{ObjectId} {};

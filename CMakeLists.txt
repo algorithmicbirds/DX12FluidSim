@@ -5,7 +5,7 @@ project(DX12FluidSim)
 
 set(CMAKE_CXX_STANDARD 20)
 
-option(PRODUCTION_BUILD "Build in production mode (Changes path of resources )" OFF)
+option(PRODUCTION_BUILD "Build in production mode (Changes path of resources )" ON)
 
 # Enable MSVC Edit & Continue if available
 if (POLICY CMP0141)
