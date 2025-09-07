@@ -44,7 +44,7 @@ ComPtr<ID3D12Resource2> CreateBuffer(
     Desc.SampleDesc.Count = 1;
     Desc.SampleDesc.Quality = 0;
     Desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    Desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+    Desc.Flags = Flags;
 
     ComPtr<ID3D12Resource2> Buffer;
 

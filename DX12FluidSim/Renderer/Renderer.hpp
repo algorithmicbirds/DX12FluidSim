@@ -21,7 +21,21 @@ struct GameObjectGPUData
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
-struct CameraBufferConstants
+struct TimerGPUData
+{
+    ComPtr<ID3D12Resource2> TimerBuffer_Upload;
+    void *MappedPtr = nullptr;
+    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
+};
+
+struct CameraGPUData
+{
+    ComPtr<ID3D12Resource2> CameraBuffer_Upload;
+    void *MappedPtr = nullptr;
+    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
+};
+
+struct CameraConstant
 {
     DirectX::XMMATRIX ViewProjection;
 };
@@ -29,6 +43,11 @@ struct CameraBufferConstants
 struct TransformConstants
 {
     DirectX::XMFLOAT4X4 ModelMatrix;
+};
+
+struct TimerConstant
+{
+    float DeltaTime;
 };
 
 class Renderer
@@ -40,33 +59,44 @@ public:
     Renderer(const Renderer &) = delete;
 
 public:
-    void RenderFrame(ID3D12GraphicsCommandList7 *CmdList);
+    void RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime);
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
     void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
     void OnResize(float NewAspectRatio);
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
-  
+
     inline DXGraphicsPipeline *GetCirclePipeline() { return CirclePipeline.get(); }
     inline DXGraphicsPipeline *GetMeshPipeline() { return MeshPipeline.get(); }
 
 private:
     void UpdateCameraBuffer();
     void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
+    void UpdateShaderTime(float DeltaTime);
+    void ClearFrame(ID3D12GraphicsCommandList7* CmdList);
+    void RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
+    inline void UpdatePerFrameData(float DeltaTime)
+    {
+        UpdateShaderTime(DeltaTime);
+        UpdateCameraBuffer();
+    } 
 
 private:
     DXSwapchain &SwapchainRef;
     ID3D12Device14 &DeviceRef;
     D3D12_VIEWPORT Viewport{};
+    Camera Camera;
 
     std::unique_ptr<DXGraphicsPipeline> CirclePipeline;
     std::unique_ptr<DXGraphicsPipeline> MeshPipeline;
-    std::unique_ptr<DXComputePipeline> ComputePipeline;
-
-    Camera Camera;
-    ComPtr<ID3D12Resource2> CameraBuffer_Default;
-    ComPtr<ID3D12Resource2> CameraBuffer_Upload;
-    D3D12_GPU_VIRTUAL_ADDRESS CameraBufferGPUAddress;
+    std::unique_ptr<DXComputePipeline> ParticleComputePipeline;
+    std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
 
     std::unordered_map<GameObject *, GameObjectGPUData> GameObjectResources;
     std::vector<GameObject *> RegisteredObjects;
+
+    UINT ParticleCount = 1024;
+
+    TimerGPUData TimerData;
+    CameraGPUData CameraData;
 };

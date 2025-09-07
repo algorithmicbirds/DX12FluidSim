@@ -18,6 +18,7 @@ public:
     HWND GetHwnd() const { return Hwnd; }
     void SetFullScreen(bool EnableFullScreen);
     void FullScreenFlipFlop();
+    float GetDeltaTimeSeconds();
 
 private:
     bool Init();
@@ -34,6 +35,8 @@ private:
     static inline bool bShouldResize = false;
     static inline bool bIsFullScreenEnabled = false;
 
-    DWORD DefaultStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    DWORD DefaultStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE;
     DWORD EXDefaultStyle = WS_EX_APPWINDOW;
+    LARGE_INTEGER Frequency{};
+    LARGE_INTEGER LastTime{};
 };

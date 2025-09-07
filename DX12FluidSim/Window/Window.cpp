@@ -4,7 +4,12 @@
 Window::Window()
 {
     if (!Init())
+    {
         throw std::runtime_error("Failed to create Window");
+    }
+
+    QueryPerformanceCounter(&Frequency);
+    QueryPerformanceCounter(&LastTime);
 }
 
 Window::~Window() { ShutDown(); }
@@ -25,18 +30,18 @@ bool Window::Init()
         return false;
 
     Hwnd = CreateWindowExW(
-        EXDefaultStyle,      
-        wcexw.lpszClassName, 
-        L"DX12 Fluid Sim",   
-        DefaultStyle,        
+        EXDefaultStyle,
+        wcexw.lpszClassName,
+        L"DX12 Fluid Sim",
+        DefaultStyle,
         CW_USEDEFAULT,
-        CW_USEDEFAULT, 
+        CW_USEDEFAULT,
         1280,
-        720, 
+        720,
         nullptr,
         nullptr,
         wcexw.hInstance,
-        this 
+        this
     );
 
     if (!Hwnd)
@@ -74,10 +79,21 @@ void Window::Update()
 
 void Window::FullScreenFlipFlop() { SetFullScreen(!bIsFullScreenEnabled); }
 
+float Window::GetDeltaTimeSeconds()
+{
+    LARGE_INTEGER CurrentTime;
+    QueryPerformanceCounter(&CurrentTime);
+
+    float deltaTime = static_cast<float>(CurrentTime.QuadPart - LastTime.QuadPart) / Frequency.QuadPart;
+
+    LastTime = CurrentTime;
+    return deltaTime;
+}
+
 void Window::SetFullScreen(bool EnableFullScreen)
 {
     if (EnableFullScreen == bIsFullScreenEnabled)
-        return; 
+        return;
 
     if (EnableFullScreen)
     {
@@ -96,9 +112,10 @@ void Window::SetFullScreen(bool EnableFullScreen)
                 mi.rcMonitor.top,
                 mi.rcMonitor.right - mi.rcMonitor.left,
                 mi.rcMonitor.bottom - mi.rcMonitor.top,
-                SWP_FRAMECHANGED | SWP_NOOWNERZORDER
+                SWP_FRAMECHANGED | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE
             );
         }
+
         bIsFullScreenEnabled = true;
     }
     else
@@ -113,11 +130,14 @@ void Window::SetFullScreen(bool EnableFullScreen)
             SavedWindowRect.top,
             SavedWindowRect.right - SavedWindowRect.left,
             SavedWindowRect.bottom - SavedWindowRect.top,
-            SWP_FRAMECHANGED | SWP_NOOWNERZORDER
+            SWP_FRAMECHANGED | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE
         );
+
         bIsFullScreenEnabled = false;
     }
 }
+
+
 
 LRESULT CALLBACK Window::StaticWindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
@@ -157,7 +177,6 @@ LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
         if (WParam != SIZE_MINIMIZED)
             bShouldResize = true;
         break;
-
     default:
         break;
     }
