@@ -8,7 +8,7 @@ public:
     ~UI();
 
     void CreateDescHeap();
-    void RenderUI(ID3D12GraphicsCommandList7 *CmdList);
+    void RenderUI(ID3D12GraphicsCommandList7 *CmdList, class Renderer &RendererRef);
     void NewFrame();
 
 private:

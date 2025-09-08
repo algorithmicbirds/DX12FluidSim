@@ -2,6 +2,7 @@
 #include "DebugLayer/DebugMacros.hpp"
 #include "D3D/DXSwapchain.hpp"
 #include "D3D/DXContext.hpp"
+#include "Renderer/Renderer.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_dx12.h>
@@ -66,7 +67,7 @@ void UI::NewFrame()
     ImGui::NewFrame();
 }
 
-void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
+void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList, Renderer& RendererRef)
 {
     NewFrame();
 
@@ -74,7 +75,14 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     ImGui::Begin("DX12FluidSim", nullptr, ImGuiWindowFlags_MenuBar);
-    ImGui::Text("Hello World");
+    static float halfWidth = 1.0f; 
+    if (ImGui::SliderFloat("Box", &halfWidth, 1.0f, 8.0f))
+    {
+        float halfHeight = halfWidth * (9.0f / 16.0f);
+
+        RendererRef.BoundingBoxCPU.Min = {-halfWidth, -halfHeight};
+        RendererRef.BoundingBoxCPU.Max = {+halfWidth, +halfHeight};
+    }
     ImGui::End();
 
     ImGui::Render();

@@ -72,7 +72,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         Scene Scene{Renderer, *Context.GetDevice()};
 
         FluidSimulation FluidSim{Scene, Renderer};
-        UI UI{Context, Swapchain, Window.GetHwnd()};
+        UI ui{Context, Swapchain, Window.GetHwnd()};
 
         Scene.FlushToRenderer(CmdList);
 
@@ -113,7 +113,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             CmdList = Context.InitCmdList();
             Swapchain.TransitionCurrentToRT(CmdList);
             Renderer.RenderFrame(CmdList, DeltaTime);
-            UI.RenderUI(CmdList);
+
+            ui.RenderUI(CmdList, Renderer);
             Swapchain.TransitionRTToPresent(CmdList);
             Context.DispatchCmdList();
             Swapchain.Present();

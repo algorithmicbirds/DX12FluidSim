@@ -174,10 +174,7 @@ void Renderer::UpdateShaderTime(float DeltaTime)
 
 void Renderer::UpdateBoundingBoxData()
 {
-    BoundingBoxConstant BoundingBox{};
-    BoundingBox.Min = {-2.0f, -2.0f};
-    BoundingBox.Max = {2.0f, 2.0f};
-    memcpy(BoundingBoxData.MappedPtr, &BoundingBox, sizeof(BoundingBox));
+    memcpy(BoundingBoxData.MappedPtr, &BoundingBoxCPU, sizeof(BoundingBoxCPU));
 }
 
 void Renderer::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }

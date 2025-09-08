@@ -85,7 +85,7 @@ private:
     void UpdateShaderTime(float DeltaTime);
     void UpdateBoundingBoxData();
     void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
-    void ClearFrame(ID3D12GraphicsCommandList7* CmdList);
+    void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
@@ -94,8 +94,14 @@ private:
         UpdateShaderTime(DeltaTime);
         UpdateCameraBuffer();
         UpdateBoundingBoxData();
-    } 
+    }
 
+    // updated externally beware
+public:
+    BoundingBoxConstant BoundingBoxCPU{
+        {-1.0f, -0.5625f}, // Min
+        {1.0f,  0.5625f }  // Max
+    };
 
 private:
     DXSwapchain &SwapchainRef;
