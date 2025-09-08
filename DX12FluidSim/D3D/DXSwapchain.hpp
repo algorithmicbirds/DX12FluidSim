@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <iostream>
 
+#include "GlobInclude/Utils.hpp"
+
 class DXContext;
 class Window;
 
@@ -45,6 +47,18 @@ public:
     inline D3D12_CPU_DESCRIPTOR_HANDLE &GetCurrentDSVHandle() { return DSVHandle; }
     inline UINT GetHeight() const { return Height; }
     inline UINT GetWidth() const { return Width; }
+    inline void TransitionCurrentToRT(ID3D12GraphicsCommandList7 *CmdList)
+    {
+        Utils::TransitionResoure(
+            CmdList, GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET
+        );
+    }
+    inline void TransitionRTToPresent(ID3D12GraphicsCommandList7 *CmdList)
+    {
+        Utils::TransitionResoure(
+            CmdList, GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT
+        );
+    }
 
 private:
     bool Init();

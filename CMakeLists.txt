@@ -5,7 +5,7 @@ project(DX12FluidSim)
 
 set(CMAKE_CXX_STANDARD 20)
 
-option(PRODUCTION_BUILD "Build in production mode (Changes path of resources )" ON)
+option(PRODUCTION_BUILD "Build in production mode (Changes path of resources )" OFF)
 
 # Enable MSVC Edit & Continue if available
 if (POLICY CMP0141)
@@ -17,10 +17,9 @@ if (POLICY CMP0141)
     )
 endif()
 
-#plan to add noesis later
-#set(NOESIS_SDK_DIR "F:/NoesisGUI-NativeSDK-win-3.2.8-Indie")
-#include_directories(${NOESIS_SDK_DIR}/Include)
-#link_directories(${NOESIS_SDK_DIR}/Lib/windows_x86_64)
+set(NOESIS_SDK_DIR "F:/NoesisGUI-NativeSDK-win-3.2.8-Indie")
+include_directories(${NOESIS_SDK_DIR}/Include)
+link_directories(${NOESIS_SDK_DIR}/Lib/windows_x86_64)
 
 
 

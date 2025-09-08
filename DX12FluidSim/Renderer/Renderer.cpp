@@ -30,15 +30,9 @@ Renderer::~Renderer() {}
 void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
 {
     UpdatePerFrameData(DeltaTime);
-    ID3D12Resource1 *CurrentBuffer = SwapchainRef.GetCurrentBackBuffer();
-
-    Utils::TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
-
-    Utils::TransitionResoure(CmdList, CurrentBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 }
 
 void Renderer::ClearFrame(ID3D12GraphicsCommandList7* CmdList) {

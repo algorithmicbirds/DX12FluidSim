@@ -7,6 +7,7 @@
 #include "DebugLayer/DebugMacros.hpp"
 #include "Renderer/Scene.hpp"
 #include "FluidSimulation/FluidSimulation.hpp"
+#include "Window/UI.hpp"
 
 #ifdef _DEBUG
 void InitConsole()
@@ -71,22 +72,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         Scene Scene{Renderer, *Context.GetDevice()};
 
         FluidSimulation FluidSim{Scene, Renderer};
+        UI UI{Context, Swapchain, Window.GetHwnd()};
 
         Scene.FlushToRenderer(CmdList);
 
         Context.DispatchCmdList();
-
         while (!Window.ShouldClose())
         {
 #ifdef _DEBUG
             Debug.PrintLiveMessages();
 #endif // _DEBUG
 
-            Window.Update();
+            Window.UpdateMsg();
+            Window.UpdateKeyBoard();
+            if (Window.KeyPressed(VK_F11))
+            {
+                Window.FullScreenFlipFlop();
+            }
+            if (Window.KeyPressed(0x41))
+            {
+                printf("A pressed");
+            }
+            if (Window.KeyPressed(0x57))
+            {
+                printf("W pressed");
+            }
+            Window.ResetKeyBoardState();
+
 
             if (Window.ShouldResize())
             {
-
                 Context.Flush(Swapchain.GetFrameCount());
                 Swapchain.Resize();
                 Renderer.OnResize(Swapchain.GetAspectRatio());
@@ -95,10 +110,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             }
 
             float DeltaTime = Window.GetDeltaTimeSeconds();
-            std::cout << DeltaTime << "\n";
-
             CmdList = Context.InitCmdList();
+            Swapchain.TransitionCurrentToRT(CmdList);
             Renderer.RenderFrame(CmdList, DeltaTime);
+            UI.RenderUI(CmdList);
+            Swapchain.TransitionRTToPresent(CmdList);
             Context.DispatchCmdList();
             Swapchain.Present();
         }

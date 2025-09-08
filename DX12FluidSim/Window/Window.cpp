@@ -67,7 +67,7 @@ void Window::ShutDown()
     }
 }
 
-void Window::Update()
+void Window::UpdateMsg()
 {
     MSG msg;
     while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -137,8 +137,6 @@ void Window::SetFullScreen(bool EnableFullScreen)
     }
 }
 
-
-
 LRESULT CALLBACK Window::StaticWindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
     Window *self = nullptr;
@@ -165,12 +163,19 @@ LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
     switch (Msg)
     {
     case WM_KEYDOWN:
-        if (WParam == VK_F11)
-            FullScreenFlipFlop();
+        if (!(LParam & 0x40000000))
+        {
+            Keyboard.OnKeyPressed(static_cast<UCHAR>(WParam));
+        }
         break;
-
+    case WM_KEYUP:
+        Keyboard.OnKeyReleased(static_cast<UCHAR>(WParam));
+        break;
     case WM_CLOSE:
         bShouldClose = true;
+        break;
+    case WM_CHAR:
+        Keyboard.OnChar(static_cast<char>(WParam));
         break;
 
     case WM_SIZE:
@@ -181,4 +186,23 @@ LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
         break;
     }
     return DefWindowProcW(Hwnd, Msg, WParam, LParam);
+}
+
+void Window::UpdateKeyBoard()
+{
+    while (auto e = Keyboard.ReadKey())
+    {
+        if (e->IsPress())
+        {
+            if (!KeysState[e->GetCode()])
+                KeyDown.set(e->GetCode());
+
+            KeysState[e->GetCode()] = true;
+        }
+        else if (e->IsRelease())
+        {
+            KeyUp.set(e->GetCode());
+            KeysState[e->GetCode()] = false;
+        }
+    }
 }

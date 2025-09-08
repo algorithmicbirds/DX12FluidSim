@@ -1,0 +1,22 @@
+#pragma once
+#include "GlobInclude/WinInclude.hpp"
+
+class UI
+{
+public:
+    UI(class DXContext &Context, class DXSwapchain &Swapchain, HWND Hwnd);
+    ~UI();
+
+    void CreateDescHeap();
+    void RenderUI(ID3D12GraphicsCommandList7 *CmdList);
+    void NewFrame();
+
+private:
+    void InitializeImgui();
+
+private:
+    DXContext &ContextRef;
+    HWND &HwndRef;
+    DXSwapchain &SwapchainRef;
+    ComPtr<ID3D12DescriptorHeap> ImguiHeap;
+};

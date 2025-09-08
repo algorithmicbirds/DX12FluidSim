@@ -1,5 +1,7 @@
 #pragma once
+
 #include "GlobInclude/WinInclude.hpp"
+#include "Window/KeyBoard.hpp"
 
 class Window
 {
@@ -9,7 +11,7 @@ public:
     Window(const Window &) = delete;
     Window &operator=(const Window &) = delete;
 
-    void Update();
+    void UpdateMsg();
 
     bool ShouldClose() const { return bShouldClose; }
     bool ShouldResize() const { return bShouldResize; }
@@ -19,6 +21,17 @@ public:
     void SetFullScreen(bool EnableFullScreen);
     void FullScreenFlipFlop();
     float GetDeltaTimeSeconds();
+    void UpdateKeyBoard();
+
+    bool KeyPressed(UCHAR Keycode) { return KeyDown[Keycode]; }
+    bool KeyReleased(UCHAR KeyCode) { return KeyUp[KeyCode]; };
+    void ResetKeyBoardState() {
+        KeyDown.reset();
+        KeyUp.reset();
+    };
+
+public:
+    KeyBoard Keyboard;
 
 private:
     bool Init();
@@ -39,4 +52,9 @@ private:
     DWORD EXDefaultStyle = WS_EX_APPWINDOW;
     LARGE_INTEGER Frequency{};
     LARGE_INTEGER LastTime{};
+
+    std::bitset<256> KeysState{}; 
+    std::bitset<256> KeyDown{};
+    std::bitset<256> KeyUp{};
+
 };
