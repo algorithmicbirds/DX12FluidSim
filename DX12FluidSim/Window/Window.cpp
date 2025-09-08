@@ -177,7 +177,49 @@ LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
     case WM_CHAR:
         Keyboard.OnChar(static_cast<char>(WParam));
         break;
-
+    case WM_MOUSEMOVE:
+    {
+        int x = LOWORD(LParam);
+        int y = HIWORD(LParam);
+        Mouse.OnMouseMove(x, y);
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        int x = LOWORD(LParam);
+        int y = HIWORD(LParam);
+        Mouse.OnLeftPressed(x, y);
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        int x = LOWORD(LParam);
+        int y = HIWORD(LParam);
+        Mouse.OnLeftReleased(x, y);
+        break;
+    }
+    case WM_RBUTTONDOWN:
+    {
+        int x = LOWORD(LParam);
+        int y = HIWORD(LParam);
+        Mouse.OnRightPressed(x, y);
+        break;
+    }
+    case WM_RBUTTONUP:
+    {
+        int x = LOWORD(LParam);
+        int y = HIWORD(LParam);
+        Mouse.OnRightReleased(x, y);
+        break;
+    }
+    case WM_MOUSEWHEEL:
+    {
+        int x = LOWORD(LParam);
+        int y = HIWORD(LParam);
+        int delta = GET_WHEEL_DELTA_WPARAM(WParam);
+        Mouse.OnWheelDelta(x, y, delta);
+        break;
+    }
     case WM_SIZE:
         if (WParam != SIZE_MINIMIZED)
             bShouldResize = true;

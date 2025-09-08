@@ -97,6 +97,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             {
                 printf("W pressed");
             }
+            auto [x, y] = Window.Mouse.GetPos(); 
+            printf("Mouse position: %d, %d\n", x, y);
             Window.ResetKeyBoardState();
 
 

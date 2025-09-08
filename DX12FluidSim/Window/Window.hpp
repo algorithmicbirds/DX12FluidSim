@@ -2,6 +2,7 @@
 
 #include "GlobInclude/WinInclude.hpp"
 #include "Window/KeyBoard.hpp"
+#include "Window/Mouse.hpp"
 
 class Window
 {
@@ -32,6 +33,7 @@ public:
 
 public:
     KeyBoard Keyboard;
+    Mouse Mouse;
 
 private:
     bool Init();
