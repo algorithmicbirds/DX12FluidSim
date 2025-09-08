@@ -1,7 +1,4 @@
-struct Particle
-{
-    float3 Position;
-};
+#include "Particle_cs.hlsl"
 
 cbuffer CameraBuffer : register(b0)
 {

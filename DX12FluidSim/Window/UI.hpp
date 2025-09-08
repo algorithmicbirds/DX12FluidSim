@@ -12,7 +12,7 @@ public:
     void NewFrame();
 
 private:
-    void InitializeImgui();
+    void InitializeImGUI();
 
 private:
     DXContext &ContextRef;

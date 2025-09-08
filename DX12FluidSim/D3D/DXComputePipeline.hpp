@@ -7,6 +7,8 @@ struct Particle
 {
     DirectX::XMFLOAT3 Position;
     float Pad1;
+    DirectX::XMFLOAT3 Velocity;
+    float Pad2;
 };
 
 struct ParticleGPUData

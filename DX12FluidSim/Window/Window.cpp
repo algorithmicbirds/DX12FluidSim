@@ -1,6 +1,11 @@
 #include "Window.hpp"
 #include <stdexcept>
 
+#include <imgui_impl_win32.h>
+
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+
 Window::Window()
 {
     if (!Init())
@@ -160,6 +165,9 @@ LRESULT CALLBACK Window::StaticWindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LP
 
 LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
+    if (ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam))
+        return 0;
+
     switch (Msg)
     {
     case WM_KEYDOWN:

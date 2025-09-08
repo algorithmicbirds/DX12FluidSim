@@ -1,11 +1,11 @@
 ﻿cmake_minimum_required(VERSION 3.8)
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/Scripts/CompileShaders.cmake")
 project(DX12FluidSim)
-
 set(CMAKE_CXX_STANDARD 20)
 
-option(PRODUCTION_BUILD "Build in production mode (Changes path of resources )" OFF)
+include("${CMAKE_CURRENT_SOURCE_DIR}/Scripts/CompileShaders.cmake")
+
+option(PRODUCTION_BUILD "Build in production mode (Changes path of resources)" OFF)
 
 # Enable MSVC Edit & Continue if available
 if (POLICY CMP0141)
@@ -17,12 +17,15 @@ if (POLICY CMP0141)
     )
 endif()
 
-set(NOESIS_SDK_DIR "F:/NoesisGUI-NativeSDK-win-3.2.8-Indie")
-include_directories(${NOESIS_SDK_DIR}/Include)
-link_directories(${NOESIS_SDK_DIR}/Lib/windows_x86_64)
+file(GLOB IMGUI_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/*.cpp"
+)
 
-
-
+# ImGui DX12 and Win32 backends
+set(IMGUI_BACKENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/backends/imgui_impl_dx12.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/backends/imgui_impl_win32.cpp"
+)
 
 file(GLOB_RECURSE DX_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/DX12FluidSim/*.cpp"
@@ -35,6 +38,8 @@ file(GLOB_RECURSE DX_HEADERS CONFIGURE_DEPENDS
 add_executable(${PROJECT_NAME}
     ${DX_SOURCES}
     ${DX_HEADERS}
+    ${IMGUI_SOURCES}
+    ${IMGUI_BACKENDS}
 )
 
 
@@ -53,6 +58,8 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/DX12FluidSim"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/backends"
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
