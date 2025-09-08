@@ -35,6 +35,13 @@ struct CameraGPUData
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
+struct BoundingBoxGPUData
+{
+    ComPtr<ID3D12Resource2> BoundingBoxBuffer_Upload;
+    void *MappedPtr = nullptr;
+    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
+};
+
 struct CameraConstant
 {
     DirectX::XMMATRIX ViewProjection;
@@ -43,6 +50,12 @@ struct CameraConstant
 struct TransformConstants
 {
     DirectX::XMFLOAT4X4 ModelMatrix;
+};
+
+struct BoundingBoxConstant
+{
+    DirectX::XMFLOAT2 Min;
+    DirectX::XMFLOAT2 Max;
 };
 
 struct TimerConstant
@@ -65,21 +78,24 @@ public:
     void OnResize(float NewAspectRatio);
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
 
-    inline DXGraphicsPipeline *GetCirclePipeline() { return CirclePipeline.get(); }
     inline DXGraphicsPipeline *GetMeshPipeline() { return MeshPipeline.get(); }
 
 private:
     void UpdateCameraBuffer();
-    void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
     void UpdateShaderTime(float DeltaTime);
+    void UpdateBoundingBoxData();
+    void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
     void ClearFrame(ID3D12GraphicsCommandList7* CmdList);
     void RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
-    inline void UpdatePerFrameData(float DeltaTime)
+    void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void UpdatePerFrameData(float DeltaTime)
     {
         UpdateShaderTime(DeltaTime);
         UpdateCameraBuffer();
+        UpdateBoundingBoxData();
     } 
+
 
 private:
     DXSwapchain &SwapchainRef;
@@ -87,7 +103,7 @@ private:
     D3D12_VIEWPORT Viewport{};
     Camera Camera;
 
-    std::unique_ptr<DXGraphicsPipeline> CirclePipeline;
+    std::unique_ptr<DXGraphicsPipeline> BoundingBoxPipeline;
     std::unique_ptr<DXGraphicsPipeline> MeshPipeline;
     std::unique_ptr<DXComputePipeline> ParticleComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
@@ -99,4 +115,5 @@ private:
 
     TimerGPUData TimerData;
     CameraGPUData CameraData;
+    BoundingBoxGPUData BoundingBoxData;
 };

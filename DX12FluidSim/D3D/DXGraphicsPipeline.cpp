@@ -2,7 +2,7 @@
 #include "Vertex.hpp"
 #include <fstream>
 #include "DebugLayer/DebugMacros.hpp"
-#include "GlobInclude/Utils.hpp"
+#include "Shared/Utils.hpp"
 
 DXGraphicsPipeline::DXGraphicsPipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
 
@@ -34,7 +34,7 @@ void DXGraphicsPipeline::CreatePipelineState(std::vector<char> &VertexShaderCode
     GraphicsPSODesc.HS.pShaderBytecode = 0;
 
     GraphicsPSODesc.pRootSignature = RootSignature.Get();
-    GraphicsPSODesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    GraphicsPSODesc.PrimitiveTopologyType = PrimitiveTopologyType;
     GraphicsPSODesc.RasterizerState = InitRasterizerDesc();
     GraphicsPSODesc.StreamOutput = InitStreamOutputDesc();
     GraphicsPSODesc.BlendState = InitBlendDesc();

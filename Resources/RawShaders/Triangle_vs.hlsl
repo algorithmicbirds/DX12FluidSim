@@ -12,12 +12,14 @@ struct VSInput
 {
     float3 Position : POSITION;
     float3 Color : COLOR;
+    float2 uv : TEXCOORD;
 };
 
 struct VSOutput
 {
     float4 Position : SV_POSITION;
     float3 Color : COLOR;
+    float2 uv : TEXCOORD;
 };
 
 VSOutput VSMain(VSInput input)
@@ -26,5 +28,6 @@ VSOutput VSMain(VSInput input)
     float4 worldPos = mul(float4(input.Position, 1.0f), Model);
     output.Position = mul(worldPos, ViewProjection);
     output.Color = input.Color;
+    output.uv = input.uv;
     return output;
 }

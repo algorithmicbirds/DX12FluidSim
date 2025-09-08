@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#include "GlobInclude/Utils.hpp"
+#include "Shared/Utils.hpp"
 
 class DXContext;
 class Window;

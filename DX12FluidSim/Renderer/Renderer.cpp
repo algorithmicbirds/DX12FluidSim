@@ -3,22 +3,28 @@
 #include "DebugLayer/DebugMacros.hpp"
 #include "D3D/DXGraphicsPipeline.hpp"
 #include <iostream>
-#include "GlobInclude/Utils.hpp"
+#include "Shared/Utils.hpp"
 #include "D3D/DXComputePipeline.hpp"
-#include "Renderer/RootSignature.hpp"
-#include "GlobInclude/RootParams.hpp"
+#include "Shared/RootSignature.hpp"
+#include "Shared/RootParams.hpp"
 
 Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
 {
-    CirclePipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
-    CirclePipeline->SetRootSignature(RootSignature::CreateGraphicsRootSig(Device));
-    CirclePipeline->CreatePipeline(SHADER_PATH "Circle/Circle_vs.cso", SHADER_PATH "Circle/Circle_ps.cso");
-
+    ComPtr<ID3D12RootSignature> RootSignature = RootSignature::CreateGraphicsRootSig(Device);
     MeshPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
-    MeshPipeline->SetRootSignature(RootSignature::CreateGraphicsRootSig(Device));
+    MeshPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+    MeshPipeline->SetRootSignature(RootSignature);
     MeshPipeline->CreatePipeline(SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
 
+    BoundingBoxPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
+    BoundingBoxPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+    BoundingBoxPipeline->SetRootSignature(RootSignature);
+    BoundingBoxPipeline->CreatePipeline(
+        SHADER_PATH "BoundingBox/BoundingBox_vs.cso", SHADER_PATH "BoundingBox/BoundingBox_ps.cso"
+    );
+
     ParticleGraphicsPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
+    ParticleGraphicsPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
     ParticleGraphicsPipeline->SetRootSignature(RootSignature::CreateGraphicsRootSig(Device));
     ParticleGraphicsPipeline->CreatePipeline(
         SHADER_PATH "ParticleSystem/Particle_vs.cso", SHADER_PATH "ParticleSystem/Particle_ps.cso"
@@ -33,30 +39,36 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
+    RunBoundingBoxGraphicsPipeline(CmdList);
+    // RenderGameObject(CmdList);
 }
 
-void Renderer::ClearFrame(ID3D12GraphicsCommandList7* CmdList) {
+void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
+{
     float ClearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     CmdList->ClearRenderTargetView(SwapchainRef.GetCurrentRTVHandle(), ClearColor, 0, nullptr);
     CmdList->OMSetRenderTargets(1, &SwapchainRef.GetCurrentRTVHandle(), FALSE, &SwapchainRef.GetCurrentDSVHandle());
     CmdList->ClearDepthStencilView(SwapchainRef.GetCurrentDSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
 
-void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList) {
+void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
     ParticleComputePipeline->Dispatch(CmdList);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, TimerData.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, BoundingBoxData.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
-    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticleSRV_t0, ParticleComputePipeline->GetUAVGPUHandle());
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, TimerData.GPUAddress);
-
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleSRV_t0, ParticleComputePipeline->GetUAVGPUHandle()
+    );
 
     UINT ThreadGroupSize = 256;
     UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
     CmdList->Dispatch(NumGroups, 1, 1);
 }
 
-void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList) {
+void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
     ParticleGraphicsPipeline->Dispatch(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraData.GPUAddress);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerData.GPUAddress);
@@ -64,12 +76,23 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
         GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetSRVGPUHandle()
     );
 
-
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
 
     CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
     CmdList->DrawInstanced(ParticleCount, 1, 0, 0);
+}
+
+void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
+    BoundingBoxPipeline->Dispatch(CmdList);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraData.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBox_b3, BoundingBoxData.GPUAddress);
+    CmdList->RSSetViewports(1, &Viewport);
+    CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
+
+    CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
+    CmdList->DrawInstanced(5, 1, 0, 0);
 }
 
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
@@ -93,6 +116,12 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     UINT CbSize = (sizeof(CameraConstant) + 255) & ~255;
     Utils::CreateDynamicUploadBuffer(DeviceRef, CbSize, CameraData.CameraBuffer_Upload, CameraData.MappedPtr);
     CameraData.GPUAddress = CameraData.CameraBuffer_Upload->GetGPUVirtualAddress();
+
+    UINT BoundingBoxSize = (sizeof(BoundingBoxConstant) + 255) & ~255;
+    Utils::CreateDynamicUploadBuffer(
+        DeviceRef, BoundingBoxSize, BoundingBoxData.BoundingBoxBuffer_Upload, BoundingBoxData.MappedPtr
+    );
+    BoundingBoxData.GPUAddress = BoundingBoxData.BoundingBoxBuffer_Upload->GetGPUVirtualAddress();
 }
 
 void Renderer::UpdateCameraBuffer()
@@ -123,16 +152,17 @@ void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList
 
 void Renderer::RenderGameObject(ID3D12GraphicsCommandList7 *CmdList)
 {
-    /*  for (auto *OBJ : RegisteredObjects)
-      {
-          OBJ->Transform.UpdateMatrix();
-          OBJ->Pipeline->Dispatch(CmdList);
-          auto &Data = GameObjectResources[OBJ];
-          TransformConstants CBData{OBJ->Transform.ModelMatrix};
-          CmdList->SetGraphicsRootConstantBufferView(RootParams::ModelCB_b1, Data.GPUAddress);
-          OBJ->GPUMesh->Bind(CmdList);
-          CmdList->DrawIndexedInstanced(OBJ->GPUMesh->GetIndexCount(), 1, 0, 0, 0);
-      }*/
+    for (auto *OBJ : RegisteredObjects)
+    {
+        OBJ->Transform.UpdateMatrix();
+        VALIDATE_PTR(OBJ->Pipeline);
+        OBJ->Pipeline->Dispatch(CmdList);
+        auto &Data = GameObjectResources[OBJ];
+        TransformConstants CBData{OBJ->Transform.ModelMatrix};
+        CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::ModelCB_b1, Data.GPUAddress);
+        OBJ->GPUMesh->Bind(CmdList);
+        CmdList->DrawIndexedInstanced(OBJ->GPUMesh->GetIndexCount(), 1, 0, 0, 0);
+    }
 }
 
 void Renderer::UpdateShaderTime(float DeltaTime)
@@ -142,5 +172,12 @@ void Renderer::UpdateShaderTime(float DeltaTime)
     memcpy(TimerData.MappedPtr, &Timer, sizeof(Timer));
 }
 
+void Renderer::UpdateBoundingBoxData()
+{
+    BoundingBoxConstant BoundingBox{};
+    BoundingBox.Min = {-2.0f, -2.0f};
+    BoundingBox.Max = {2.0f, 2.0f};
+    memcpy(BoundingBoxData.MappedPtr, &BoundingBox, sizeof(BoundingBox));
+}
 
 void Renderer::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }

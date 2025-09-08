@@ -14,5 +14,6 @@ cbuffer TimeBufferCompute : register(b0)
 [numthreads(256, 1, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
-    gParticles[DTid.x].Position += float3(0.001f, 0.0f , 0.0f);
+    gParticles[DTid.x].Velocity += float3(0.0f, -9.81f, 0.0f) * DeltaTimeCompute;
+    gParticles[DTid.x].Position += gParticles[DTid.x].Velocity;
 }

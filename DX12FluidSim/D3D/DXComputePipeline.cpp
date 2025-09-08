@@ -1,5 +1,5 @@
 #include "DXComputePipeline.hpp"
-#include "GlobInclude/Utils.hpp"
+#include "Shared/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 
 DXComputePipeline::DXComputePipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}

@@ -5,7 +5,7 @@
 #include <span>
 #include <functional>
 #include "DebugLayer/DebugMacros.hpp"
-#include "GlobInclude/Utils.hpp"
+#include "Shared/Utils.hpp"
 
 template <typename Vertex> class CPUMesh;
 

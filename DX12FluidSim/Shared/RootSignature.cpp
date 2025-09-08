@@ -1,6 +1,6 @@
-#include "Renderer/RootSignature.hpp"
+#include "Shared/RootSignature.hpp"
 #include "DebugLayer/DebugMacros.hpp"
-#include "GlobInclude/RootParams.hpp"
+#include "Shared/RootParams.hpp"
 
 namespace RootSignature
 {
@@ -19,7 +19,7 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     Table.NumDescriptorRanges = 1;
     Table.pDescriptorRanges = &Range;
 
-    D3D12_ROOT_PARAMETER1 RootParam[2] = {};
+    D3D12_ROOT_PARAMETER1 RootParam[3] = {};
     RootParam[ComputeRootParams::ParticleSRV_t0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     RootParam[ComputeRootParams::ParticleSRV_t0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     RootParam[ComputeRootParams::ParticleSRV_t0].DescriptorTable = Table;
@@ -29,6 +29,10 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     RootParam[ComputeRootParams::TimerCB_b0].Descriptor.ShaderRegister = 0;
     RootParam[ComputeRootParams::TimerCB_b0].Descriptor.RegisterSpace = 0;
 
+    RootParam[ComputeRootParams::BoundingBoxCB_b1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[ComputeRootParams::BoundingBoxCB_b1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    RootParam[ComputeRootParams::BoundingBoxCB_b1].Descriptor.ShaderRegister = 1;
+    RootParam[ComputeRootParams::BoundingBoxCB_b1].Descriptor.RegisterSpace = 0;
 
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootDesc = {};
     RootDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -66,7 +70,7 @@ ComPtr<ID3D12RootSignature> CreateGraphicsRootSig(ID3D12Device14 &Device)
     SRVRange.RegisterSpace = 0;
     SRVRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    D3D12_ROOT_PARAMETER RootParam[4] = {};
+    D3D12_ROOT_PARAMETER RootParam[5] = {};
 
     RootParam[GraphicsRootParams::CameraCB_b0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     RootParam[GraphicsRootParams::CameraCB_b0].Descriptor.ShaderRegister = 0;
@@ -87,6 +91,11 @@ ComPtr<ID3D12RootSignature> CreateGraphicsRootSig(ID3D12Device14 &Device)
     RootParam[GraphicsRootParams::TimerCB_b2].Descriptor.ShaderRegister = 2;
     RootParam[GraphicsRootParams::TimerCB_b2].Descriptor.RegisterSpace = 0;
     RootParam[GraphicsRootParams::TimerCB_b2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+    RootParam[GraphicsRootParams::BoundingBox_b3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[GraphicsRootParams::BoundingBox_b3].Descriptor.ShaderRegister = 3;
+    RootParam[GraphicsRootParams::BoundingBox_b3].Descriptor.RegisterSpace = 0;
+    RootParam[GraphicsRootParams::BoundingBox_b3].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 
     D3D12_ROOT_SIGNATURE_DESC RootSigDesc{};
