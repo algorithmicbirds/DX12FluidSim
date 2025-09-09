@@ -13,7 +13,7 @@ Window::Window()
         throw std::runtime_error("Failed to create Window");
     }
 
-    QueryPerformanceCounter(&Frequency);
+    QueryPerformanceFrequency(&Frequency);
     QueryPerformanceCounter(&LastTime);
 }
 

@@ -90,9 +90,9 @@ void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdLis
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBox_b3, BoundingBoxData.GPUAddress);
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
-
+    constexpr UINT BoxVertices = 5;
     CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
-    CmdList->DrawInstanced(5, 1, 0, 0);
+    CmdList->DrawInstanced(BoxVertices, 1, 0, 0);
 }
 
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
