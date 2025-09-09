@@ -68,15 +68,37 @@ void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdLi
     ParticleCount = Count;
     UINT BufferSize = sizeof(Particle) * ParticleCount;
 
-    std::vector<Particle> InitData(BufferSize / sizeof(Particle));
-    for (auto &p : InitData)
-        p.Position = {0.0f, 0.0f, 0.0f};
+    std::vector<Particle> particleData(ParticleCount);
+
+    int particlesPerRow = (int)sqrt(ParticleCount);
+    int particlesPerCol = (ParticleCount - 1) / particlesPerRow + 1;
+
+    float particleSpacing = 0.3f;
+
+    float gridWidth = particlesPerRow * (2 * particleData[0].ParticleRadius + particleSpacing);
+    float gridHeight = particlesPerCol * (2 * particleData[0].ParticleRadius + particleSpacing);
+
+    for (int i = 0; i < ParticleCount; ++i)
+    {
+        Particle &p = particleData[i];
+
+        int row = i / particlesPerRow;
+        int col = i % particlesPerRow;
+
+        float spacing = p.ParticleRadius * 2 + particleSpacing;
+
+        p.Position.x = col * spacing - gridWidth / 2 + p.ParticleRadius;
+        p.Position.y = row * spacing - gridHeight / 2 + p.ParticleRadius;
+        p.Position.z = 0.0f;
+
+        p.Velocity = {0.0f, 0.0f, 0.0f};
+    }
 
     Utils::CreateUploadBuffer(
         DeviceRef,
         CmdList,
         BufferSize,
-        InitData.data(),
+        particleData.data(),
         ParticleData.DefaultBuffer,
         ParticleData.UploadBuffer,
         D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS

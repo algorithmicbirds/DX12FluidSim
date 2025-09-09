@@ -96,12 +96,12 @@ private:
         UpdateBoundingBoxData();
     }
 
-    // updated externally beware
 public:
     BoundingBoxConstant BoundingBoxCPU{
-        {-1.0f, -0.5625f}, // Min
-        {1.0f,  0.5625f }  // Max
+        {-1.0f * 1.5f, -0.5625f * 1.5f}, 
+        {1.0f * 1.5f,  0.5625f * 1.5f } 
     };
+
 
 private:
     DXSwapchain &SwapchainRef;
@@ -117,7 +117,7 @@ private:
     std::unordered_map<GameObject *, GameObjectGPUData> GameObjectResources;
     std::vector<GameObject *> RegisteredObjects;
 
-    UINT ParticleCount = 1024;
+    UINT ParticleCount = 30;
 
     TimerGPUData TimerData;
     CameraGPUData CameraData;

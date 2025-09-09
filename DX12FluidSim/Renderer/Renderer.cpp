@@ -79,8 +79,9 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
 
-    CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-    CmdList->DrawInstanced(ParticleCount, 1, 0, 0);
+    CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    constexpr UINT ParticleVerts = 6;
+    CmdList->DrawInstanced(ParticleVerts* ParticleCount, 1, 0, 0);
 }
 
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)

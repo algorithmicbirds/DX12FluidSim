@@ -76,7 +76,7 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList, Renderer& RendererRef)
 
     ImGui::Begin("DX12FluidSim", nullptr, ImGuiWindowFlags_MenuBar);
     static float halfWidth = 1.0f; 
-    if (ImGui::SliderFloat("Box", &halfWidth, 1.0f, 8.0f))
+    if (ImGui::SliderFloat("Box", &halfWidth, 1.0f, 3.5f))
     {
         float halfHeight = halfWidth * (9.0f / 16.0f);
 

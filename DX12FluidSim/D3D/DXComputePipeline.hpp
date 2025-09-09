@@ -6,16 +6,15 @@
 struct Particle
 {
     DirectX::XMFLOAT3 Position;
+    float ParticleRadius = 0.1f;
+    DirectX::XMFLOAT3 Velocity; 
     float Pad1;
-    DirectX::XMFLOAT3 Velocity;
-    float Pad2;
 };
 
 struct ParticleGPUData
 {
     ComPtr<ID3D12Resource2> DefaultBuffer;
     ComPtr<ID3D12Resource2> UploadBuffer;
-    
 };
 
 class DXComputePipeline
