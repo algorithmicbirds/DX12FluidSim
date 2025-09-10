@@ -12,13 +12,16 @@ if (POLICY CMP0141)
     cmake_policy(SET CMP0141 NEW)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
         "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,"
-        "$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,"
+        "$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>," 
         "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>"
     )
 endif()
 
-file(GLOB IMGUI_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/*.cpp"
+set(IMGUI_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/imgui.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/imgui_draw.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/imgui_tables.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/imgui_widgets.cpp"
 )
 
 # ImGui DX12 and Win32 backends
@@ -60,6 +63,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/DX12FluidSim"
     "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/backends"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/nano-signal-slot"
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

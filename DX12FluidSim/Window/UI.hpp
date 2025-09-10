@@ -1,5 +1,6 @@
 #pragma once
 #include "GlobInclude/WinInclude.hpp"
+#include <nano_signal_slot.hpp>
 
 class UI
 {
@@ -10,6 +11,10 @@ public:
     void CreateDescHeap();
     void RenderUI(ID3D12GraphicsCommandList7 *CmdList, class Renderer &RendererRef);
     void NewFrame();
+
+public:
+    Nano::Signal<void(float)> OnHeightChanged;
+    Nano::Signal<void(float)> OnWidthChanged;
 
 private:
     void InitializeImGUI();

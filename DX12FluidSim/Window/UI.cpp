@@ -80,14 +80,16 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList, Renderer& RendererRef)
 
     if (ImGui::SliderFloat("Width", &halfWidth, 0.5f, 3.5f))
     {
-        RendererRef.BoundingBoxCPU.Min.x = -halfWidth;
-        RendererRef.BoundingBoxCPU.Max.x = halfWidth;
+        /*RendererRef.BoundingBoxCPU.Min.x = -halfWidth;
+        RendererRef.BoundingBoxCPU.Max.x = halfWidth;*/
+        OnWidthChanged.fire(halfWidth);
     }
 
     if (ImGui::SliderFloat("Height", &halfHeight, 0.25f, 2.0f))
     {
-        RendererRef.BoundingBoxCPU.Min.y = -halfHeight;
-        RendererRef.BoundingBoxCPU.Max.y = halfHeight;
+       /* RendererRef.BoundingBoxCPU.Min.y = -halfHeight;
+        RendererRef.BoundingBoxCPU.Max.y = halfHeight;*/
+        OnHeightChanged.fire(halfHeight);
     }
     ImGui::End();
 

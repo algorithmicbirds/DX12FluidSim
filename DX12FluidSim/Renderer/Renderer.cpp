@@ -55,6 +55,7 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
     ParticleComputePipeline->Dispatch(CmdList);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, TimerCB.GPUAddress);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, BoundingBoxCB.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::SimParamsCB_b2, SimParamsCB.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
@@ -80,7 +81,7 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 
     CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     constexpr UINT ParticleVerts = 6;
-    CmdList->DrawInstanced(ParticleVerts* ParticleCount, 1, 0, 0);
+    CmdList->DrawInstanced(ParticleVerts * ParticleCount, 1, 0, 0);
 }
 
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -106,9 +107,11 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     Camera.SetTarget({0.0f, 0.0f, 0.0f});
     Camera.SetLens(DirectX::XM_PIDIV4, SwapchainRef.GetAspectRatio(), 0.1f, 1000.0f);
 
+    SimParamsCB.Initialize(DeviceRef);
     TimerCB.Initialize(DeviceRef);
     CameraCB.Initialize(DeviceRef);
     BoundingBoxCB.Initialize(DeviceRef);
+    UpdateBoundingBoxData();
 }
 
 void Renderer::UpdateCameraBuffer()
@@ -159,9 +162,20 @@ void Renderer::UpdateShaderTime(float DeltaTime)
     TimerCB.Update(Timer);
 }
 
-void Renderer::UpdateBoundingBoxData()
-{
-    BoundingBoxCB.Update(BoundingBoxCPU);
-}
+void Renderer::UpdateBoundingBoxData() { BoundingBoxCB.Update(BoundingBoxCPU); }
 
 void Renderer::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }
+
+void Renderer::SetBoundingBoxHeight(float Height)
+{
+    BoundingBoxCPU.Min.y = -Height;
+    BoundingBoxCPU.Max.y = Height;
+    UpdateBoundingBoxData();
+}
+
+void Renderer::SetBoundingBoxWidth(float Width)
+{
+    BoundingBoxCPU.Min.x = -Width;
+    BoundingBoxCPU.Max.x = Width;
+    UpdateBoundingBoxData();
+}

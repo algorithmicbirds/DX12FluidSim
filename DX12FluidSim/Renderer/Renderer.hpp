@@ -79,7 +79,8 @@ public:
     void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
     void OnResize(float NewAspectRatio);
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
-
+    void SetBoundingBoxHeight(float Height);
+    void SetBoundingBoxWidth(float Width);
     inline DXGraphicsPipeline *GetMeshPipeline() { return MeshPipeline.get(); }
 
 private:
@@ -95,15 +96,7 @@ private:
     {
         UpdateShaderTime(DeltaTime);
         UpdateCameraBuffer();
-        UpdateBoundingBoxData();
     }
-
-public:
-    BoundingBoxConstant BoundingBoxCPU{
-        {-1.5f, -0.84375f},
-        { 1.5f,  0.84375f }
-    };
-
 
 private:
     DXSwapchain &SwapchainRef;
@@ -120,6 +113,11 @@ private:
     std::vector<GameObject *> RegisteredObjects;
 
     UINT ParticleCount = 30;
+
+    BoundingBoxConstant BoundingBoxCPU{
+        {-1.5f, -0.84375f},
+        {1.5f,  0.84375f }
+    };
 
     ConstantBuffer<TimerConstant> TimerCB;
     ConstantBuffer<CameraConstant> CameraCB;
