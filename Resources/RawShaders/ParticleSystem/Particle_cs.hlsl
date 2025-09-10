@@ -30,10 +30,11 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
     uint i = DTid.x;
     Particle p = gParticles[i];
-    float Damping = 1.0f;
     float SurfaceOffset = 0.001f;
     
-    p.Velocity += float3(0.0f, -9.81f, 0.0f) * DeltaTimeCompute;
+    if(Pause == 1)
+    {
+    p.Velocity += float3(0.0f, -Gravity, 0.0f) * DeltaTimeCompute;
     p.Position += p.Velocity * DeltaTimeCompute;
 
     if (p.Position.x - p.ParticleRadius < BBMin.x)
@@ -56,6 +57,7 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     {
         p.Position.y = BBMax.y - p.ParticleRadius - SurfaceOffset;
         p.Velocity.y *= -Damping;
+    }
     }
 
     gParticles[i] = p;

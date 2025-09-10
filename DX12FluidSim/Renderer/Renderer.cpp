@@ -112,6 +112,7 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     CameraCB.Initialize(DeviceRef);
     BoundingBoxCB.Initialize(DeviceRef);
     UpdateBoundingBoxData();
+    UpdateSimParamsData();
 }
 
 void Renderer::UpdateCameraBuffer()
@@ -179,3 +180,22 @@ void Renderer::SetBoundingBoxWidth(float Width)
     BoundingBoxCPU.Max.x = Width;
     UpdateBoundingBoxData();
 }
+
+void Renderer::SetGravityData(float Gravity)
+{
+    SimParamsCPU.Gravity = Gravity;
+    UpdateSimParamsData();
+}
+
+void Renderer::SetCollisionDampingData(float CollisionDamping)
+{
+    SimParamsCPU.Damping = CollisionDamping;
+    UpdateSimParamsData();
+}
+
+void Renderer::SetPauseToggle(UINT PauseToggle) {
+    SimParamsCPU.Pause = PauseToggle;
+    UpdateSimParamsData();
+}
+
+void Renderer::UpdateSimParamsData() { SimParamsCB.Update(SimParamsCPU); }

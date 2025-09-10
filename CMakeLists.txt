@@ -52,9 +52,11 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC _CRT_SECURE_NO_WARNINGS)
 
 if (PRODUCTION_BUILD)
     target_compile_definitions(${PROJECT_NAME} PUBLIC SHADER_PATH="./Resources/CompiledShaders/")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC FONTS_PATH="./Resources/Fonts/")
     target_compile_definitions(${PROJECT_NAME} PUBLIC PRODUCTION_BUILD=1)
 else()
     target_compile_definitions(${PROJECT_NAME} PUBLIC SHADER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Resources/CompiledShaders/")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC FONTS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Resources/Fonts/")
     target_compile_definitions(${PROJECT_NAME} PUBLIC PRODUCTION_BUILD=0)
 endif()
 

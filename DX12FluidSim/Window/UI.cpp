@@ -1,8 +1,8 @@
-#include "Window/UI.hpp"
+﻿#include "Window/UI.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 #include "D3D/DXSwapchain.hpp"
 #include "D3D/DXContext.hpp"
-#include "Renderer/Renderer.hpp"
+#include "Shared/SimInitials.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_dx12.h>
@@ -26,7 +26,7 @@ void UI::InitializeImGUI()
     ImGui::CreateContext();
     ImGuiIO IO = ImGui::GetIO();
     (void)IO;
-
+    IO.Fonts->AddFontFromFileTTF(FONTS_PATH "Roboto-Regular.ttf", 16.0f);
     CreateDescHeap();
 
     ImGui_ImplWin32_Init(HwndRef);
@@ -67,7 +67,7 @@ void UI::NewFrame()
     ImGui::NewFrame();
 }
 
-void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList, Renderer& RendererRef)
+void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
 {
     NewFrame();
 
@@ -75,21 +75,33 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList, Renderer& RendererRef)
     CmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     ImGui::Begin("DX12FluidSim", nullptr, ImGuiWindowFlags_MenuBar);
-    static float halfWidth = 1.5f;
-    static float halfHeight = 0.84375; 
+    static float halfWidth = SimInitials::BoundingBoxWidth;
+    static float halfHeight = SimInitials::BoundingBoxHeight;
+    static float gravity = SimInitials::Gravity; 
+    static float collisionDamping = SimInitials::CollisionDamping;
+    static UINT pause = SimInitials::Pause;
 
     if (ImGui::SliderFloat("Width", &halfWidth, 0.5f, 3.5f))
     {
-        /*RendererRef.BoundingBoxCPU.Min.x = -halfWidth;
-        RendererRef.BoundingBoxCPU.Max.x = halfWidth;*/
         OnWidthChanged.fire(halfWidth);
     }
 
     if (ImGui::SliderFloat("Height", &halfHeight, 0.25f, 2.0f))
     {
-       /* RendererRef.BoundingBoxCPU.Min.y = -halfHeight;
-        RendererRef.BoundingBoxCPU.Max.y = halfHeight;*/
         OnHeightChanged.fire(halfHeight);
+    }
+    if (ImGui::SliderFloat("Gravity", &gravity, -30.0f, 30.0f))
+    {
+        OnGravityChanged.fire(gravity);
+    }
+    if (ImGui::SliderFloat("CollisonDamping", &collisionDamping, 0.0f, 1.0f))
+    {
+        OnCollisionDampingChanged.fire(collisionDamping);
+    }
+    if (ImGui::Button(pause ? "Pause" : "Play"))
+    {
+        pause ^= 1;             
+        OnPauseToggled.fire(pause); 
     }
     ImGui::End();
 

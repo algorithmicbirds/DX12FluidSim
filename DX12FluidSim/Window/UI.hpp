@@ -9,12 +9,15 @@ public:
     ~UI();
 
     void CreateDescHeap();
-    void RenderUI(ID3D12GraphicsCommandList7 *CmdList, class Renderer &RendererRef);
+    void RenderUI(ID3D12GraphicsCommandList7 *CmdList);
     void NewFrame();
 
 public:
     Nano::Signal<void(float)> OnHeightChanged;
     Nano::Signal<void(float)> OnWidthChanged;
+    Nano::Signal<void(float)> OnGravityChanged;
+    Nano::Signal<void(float)> OnCollisionDampingChanged;
+    Nano::Signal<void(UINT)> OnPauseToggled;
 
 private:
     void InitializeImGUI();

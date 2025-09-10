@@ -8,6 +8,7 @@
 #include "Renderer/Mesh.hpp"
 #include "Renderer/GameObject.hpp"
 #include <unordered_map>
+#include "Shared/SimInitials.hpp"
 
 class DXGraphicsPipeline;
 class DXSwapchain;
@@ -62,7 +63,7 @@ struct SimParamsConstants
 {
     float Gravity = -9.81f;
     float Damping = 1.0f;
-    UINT Pause = 1;
+    UINT Pause = 0;
 };
 
 class Renderer
@@ -81,9 +82,13 @@ public:
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
     void SetBoundingBoxHeight(float Height);
     void SetBoundingBoxWidth(float Width);
+    void SetGravityData(float Gravity);
+    void SetCollisionDampingData(float CollisionDamping);
+    void SetPauseToggle(UINT PauseToggle);
     inline DXGraphicsPipeline *GetMeshPipeline() { return MeshPipeline.get(); }
 
 private:
+    void UpdateSimParamsData();
     void UpdateCameraBuffer();
     void UpdateShaderTime(float DeltaTime);
     void UpdateBoundingBoxData();
@@ -115,9 +120,11 @@ private:
     UINT ParticleCount = 30;
 
     BoundingBoxConstant BoundingBoxCPU{
-        {-1.5f, -0.84375f},
-        {1.5f,  0.84375f }
+        {-SimInitials::BoundingBoxWidth, -SimInitials::BoundingBoxHeight},
+        {SimInitials::BoundingBoxWidth,  SimInitials::BoundingBoxHeight }
     };
+
+    SimParamsConstants SimParamsCPU{SimInitials::Gravity, SimInitials::CollisionDamping, SimInitials::Pause};
 
     ConstantBuffer<TimerConstant> TimerCB;
     ConstantBuffer<CameraConstant> CameraCB;

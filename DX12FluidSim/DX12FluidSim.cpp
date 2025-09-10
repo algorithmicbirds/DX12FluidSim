@@ -73,7 +73,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
         FluidSimulation FluidSim{Scene, Renderer};
         UI ui{Context, Swapchain, Window.GetHwnd()};
-
+        ui.OnHeightChanged.connect<&Renderer::SetBoundingBoxHeight>(Renderer);
+        ui.OnWidthChanged.connect<&Renderer::SetBoundingBoxWidth>(Renderer);
+        ui.OnGravityChanged.connect<&Renderer::SetGravityData>(Renderer);
+        ui.OnCollisionDampingChanged.connect<&Renderer::SetCollisionDampingData>(Renderer);
+        ui.OnPauseToggled.connect<&Renderer::SetPauseToggle>(Renderer);
         Scene.FlushToRenderer(CmdList);
 
         Context.DispatchCmdList();
@@ -115,9 +119,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             Swapchain.TransitionCurrentToRT(CmdList);
             Renderer.RenderFrame(CmdList, DeltaTime);
 
-            ui.RenderUI(CmdList, Renderer);
-            ui.OnHeightChanged.connect<&Renderer::SetBoundingBoxHeight>(Renderer);
-            ui.OnWidthChanged.connect<&Renderer::SetBoundingBoxWidth>(Renderer);
+            ui.RenderUI(CmdList);
+
             Swapchain.TransitionRTToPresent(CmdList);
             Context.DispatchCmdList();
             Swapchain.Present();
