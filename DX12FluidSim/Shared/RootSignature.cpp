@@ -6,11 +6,11 @@ namespace RootSignature
 {
 ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
 {
-    // u0 
+    // u0
     D3D12_DESCRIPTOR_RANGE1 Range = {};
     Range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-    Range.NumDescriptors = 1;     
-    Range.BaseShaderRegister = 0; 
+    Range.NumDescriptors = 1;
+    Range.BaseShaderRegister = 0;
     Range.RegisterSpace = 0;
     Range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
     Range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
@@ -19,7 +19,7 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     Table.NumDescriptorRanges = 1;
     Table.pDescriptorRanges = &Range;
 
-    D3D12_ROOT_PARAMETER1 RootParam[3] = {};
+    D3D12_ROOT_PARAMETER1 RootParam[4] = {};
     RootParam[ComputeRootParams::ParticleSRV_t0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     RootParam[ComputeRootParams::ParticleSRV_t0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     RootParam[ComputeRootParams::ParticleSRV_t0].DescriptorTable = Table;
@@ -33,6 +33,11 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     RootParam[ComputeRootParams::BoundingBoxCB_b1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     RootParam[ComputeRootParams::BoundingBoxCB_b1].Descriptor.ShaderRegister = 1;
     RootParam[ComputeRootParams::BoundingBoxCB_b1].Descriptor.RegisterSpace = 0;
+
+    RootParam[ComputeRootParams::SimParamsCB_b2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[ComputeRootParams::SimParamsCB_b2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    RootParam[ComputeRootParams::SimParamsCB_b2].Descriptor.ShaderRegister = 2;
+    RootParam[ComputeRootParams::SimParamsCB_b2].Descriptor.RegisterSpace = 0;
 
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootDesc = {};
     RootDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -96,7 +101,6 @@ ComPtr<ID3D12RootSignature> CreateGraphicsRootSig(ID3D12Device14 &Device)
     RootParam[GraphicsRootParams::BoundingBox_b3].Descriptor.ShaderRegister = 3;
     RootParam[GraphicsRootParams::BoundingBox_b3].Descriptor.RegisterSpace = 0;
     RootParam[GraphicsRootParams::BoundingBox_b3].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-
 
     D3D12_ROOT_SIGNATURE_DESC RootSigDesc{};
     RootSigDesc.NumParameters = _countof(RootParam);

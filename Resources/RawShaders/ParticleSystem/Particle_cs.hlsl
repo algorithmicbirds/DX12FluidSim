@@ -18,6 +18,13 @@ cbuffer BoundingBoxBuffer : register(b1)
     float2 BBMax;
 };
 
+cbuffer SimControls : register(b2)
+{
+    float Gravity;
+    float Damping;
+    int Pause;
+}
+
 [numthreads(256, 1, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {

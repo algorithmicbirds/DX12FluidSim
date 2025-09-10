@@ -91,6 +91,10 @@ float Window::GetDeltaTimeSeconds()
 
     float deltaTime = static_cast<float>(CurrentTime.QuadPart - LastTime.QuadPart) / Frequency.QuadPart;
 
+    float maxDelta = 0.05;
+    if (deltaTime >= maxDelta)
+        deltaTime = maxDelta;
+
     LastTime = CurrentTime;
     return deltaTime;
 }
@@ -170,6 +174,12 @@ LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 
     switch (Msg)
     {
+    case WM_ENTERSIZEMOVE:
+        bInModalLoop = true;
+        break;
+    case WM_EXITSIZEMOVE:
+        bInModalLoop = false;
+        break;
     case WM_KEYDOWN:
         if (!(LParam & 0x40000000))
         {

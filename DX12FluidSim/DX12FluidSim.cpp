@@ -110,6 +110,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             }
 
             float DeltaTime = Window.GetDeltaTimeSeconds();
+
+            std::cout << DeltaTime << "\n";
+
             CmdList = Context.InitCmdList();
             Swapchain.TransitionCurrentToRT(CmdList);
             Renderer.RenderFrame(CmdList, DeltaTime);

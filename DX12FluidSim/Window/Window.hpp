@@ -59,4 +59,5 @@ private:
     std::bitset<256> KeyDown{};
     std::bitset<256> KeyUp{};
 
+    bool bInModalLoop = false;
 };

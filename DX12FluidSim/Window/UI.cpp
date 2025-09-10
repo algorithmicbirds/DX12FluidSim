@@ -75,13 +75,19 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList, Renderer& RendererRef)
     CmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     ImGui::Begin("DX12FluidSim", nullptr, ImGuiWindowFlags_MenuBar);
-    static float halfWidth = 1.0f; 
-    if (ImGui::SliderFloat("Box", &halfWidth, 1.0f, 3.5f))
-    {
-        float halfHeight = halfWidth * (9.0f / 16.0f);
+    static float halfWidth = 1.5f;
+    static float halfHeight = 0.84375; 
 
-        RendererRef.BoundingBoxCPU.Min = {-halfWidth, -halfHeight};
-        RendererRef.BoundingBoxCPU.Max = {+halfWidth, +halfHeight};
+    if (ImGui::SliderFloat("Width", &halfWidth, 0.5f, 3.5f))
+    {
+        RendererRef.BoundingBoxCPU.Min.x = -halfWidth;
+        RendererRef.BoundingBoxCPU.Max.x = halfWidth;
+    }
+
+    if (ImGui::SliderFloat("Height", &halfHeight, 0.25f, 2.0f))
+    {
+        RendererRef.BoundingBoxCPU.Min.y = -halfHeight;
+        RendererRef.BoundingBoxCPU.Max.y = halfHeight;
     }
     ImGui::End();
 

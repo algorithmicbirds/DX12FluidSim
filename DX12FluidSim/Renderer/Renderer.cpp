@@ -40,7 +40,6 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     RunParticlesComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
-    // RenderGameObject(CmdList);
 }
 
 void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
@@ -54,8 +53,8 @@ void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleComputePipeline->Dispatch(CmdList);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, TimerData.GPUAddress);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, BoundingBoxData.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, TimerCB.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, BoundingBoxCB.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
@@ -70,8 +69,8 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleGraphicsPipeline->Dispatch(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraData.GPUAddress);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerData.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerCB.GPUAddress);
     CmdList->SetGraphicsRootDescriptorTable(
         GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetSRVGPUHandle()
     );
@@ -87,8 +86,8 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     BoundingBoxPipeline->Dispatch(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraData.GPUAddress);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBox_b3, BoundingBoxData.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBox_b3, BoundingBoxCB.GPUAddress);
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
     constexpr UINT BoxVertices = 5;
@@ -107,29 +106,16 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     Camera.SetTarget({0.0f, 0.0f, 0.0f});
     Camera.SetLens(DirectX::XM_PIDIV4, SwapchainRef.GetAspectRatio(), 0.1f, 1000.0f);
 
-    CameraConstant CbData;
-    CbData.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
-
-    UINT TimeBSize = sizeof(TimerConstant);
-    Utils::CreateDynamicUploadBuffer(DeviceRef, TimeBSize, TimerData.TimerBuffer_Upload, TimerData.MappedPtr);
-    TimerData.GPUAddress = TimerData.TimerBuffer_Upload->GetGPUVirtualAddress();
-
-    UINT CbSize = (sizeof(CameraConstant) + 255) & ~255;
-    Utils::CreateDynamicUploadBuffer(DeviceRef, CbSize, CameraData.CameraBuffer_Upload, CameraData.MappedPtr);
-    CameraData.GPUAddress = CameraData.CameraBuffer_Upload->GetGPUVirtualAddress();
-
-    UINT BoundingBoxSize = (sizeof(BoundingBoxConstant) + 255) & ~255;
-    Utils::CreateDynamicUploadBuffer(
-        DeviceRef, BoundingBoxSize, BoundingBoxData.BoundingBoxBuffer_Upload, BoundingBoxData.MappedPtr
-    );
-    BoundingBoxData.GPUAddress = BoundingBoxData.BoundingBoxBuffer_Upload->GetGPUVirtualAddress();
+    TimerCB.Initialize(DeviceRef);
+    CameraCB.Initialize(DeviceRef);
+    BoundingBoxCB.Initialize(DeviceRef);
 }
 
 void Renderer::UpdateCameraBuffer()
 {
     CameraConstant Data;
     Data.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
-    memcpy(CameraData.MappedPtr, &Data, sizeof(Data));
+    CameraCB.Update(Data);
 }
 
 void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList)
@@ -170,12 +156,12 @@ void Renderer::UpdateShaderTime(float DeltaTime)
 {
     TimerConstant Timer{};
     Timer.DeltaTime = DeltaTime;
-    memcpy(TimerData.MappedPtr, &Timer, sizeof(Timer));
+    TimerCB.Update(Timer);
 }
 
 void Renderer::UpdateBoundingBoxData()
 {
-    memcpy(BoundingBoxData.MappedPtr, &BoundingBoxCPU, sizeof(BoundingBoxCPU));
+    BoundingBoxCB.Update(BoundingBoxCPU);
 }
 
 void Renderer::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }

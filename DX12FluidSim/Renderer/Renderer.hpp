@@ -21,25 +21,20 @@ struct GameObjectGPUData
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
-struct TimerGPUData
+template <typename T> struct ConstantBuffer
 {
-    ComPtr<ID3D12Resource2> TimerBuffer_Upload;
+    ComPtr<ID3D12Resource2> UploadBuffer;
     void *MappedPtr = nullptr;
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
-};
 
-struct CameraGPUData
-{
-    ComPtr<ID3D12Resource2> CameraBuffer_Upload;
-    void *MappedPtr = nullptr;
-    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
-};
+    void Initialize(ID3D12Device14 &Device)
+    {
+        UINT BufferSize = (sizeof(T) + 255) & ~255;
+        Utils::CreateDynamicUploadBuffer(Device, BufferSize, UploadBuffer, MappedPtr);
+        GPUAddress = UploadBuffer->GetGPUVirtualAddress();
+    }
 
-struct BoundingBoxGPUData
-{
-    ComPtr<ID3D12Resource2> BoundingBoxBuffer_Upload;
-    void *MappedPtr = nullptr;
-    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
+    void Update(const T &Data) { memcpy(MappedPtr, &Data, sizeof(T)); }
 };
 
 struct CameraConstant
@@ -61,6 +56,13 @@ struct BoundingBoxConstant
 struct TimerConstant
 {
     float DeltaTime;
+};
+
+struct SimParamsConstants
+{
+    float Gravity = -9.81f;
+    float Damping = 1.0f;
+    UINT Pause = 1;
 };
 
 class Renderer
@@ -98,8 +100,8 @@ private:
 
 public:
     BoundingBoxConstant BoundingBoxCPU{
-        {-1.0f * 1.5f, -0.5625f * 1.5f}, 
-        {1.0f * 1.5f,  0.5625f * 1.5f } 
+        {-1.5f, -0.84375f},
+        { 1.5f,  0.84375f }
     };
 
 
@@ -119,7 +121,8 @@ private:
 
     UINT ParticleCount = 30;
 
-    TimerGPUData TimerData;
-    CameraGPUData CameraData;
-    BoundingBoxGPUData BoundingBoxData;
+    ConstantBuffer<TimerConstant> TimerCB;
+    ConstantBuffer<CameraConstant> CameraCB;
+    ConstantBuffer<BoundingBoxConstant> BoundingBoxCB;
+    ConstantBuffer<SimParamsConstants> SimParamsCB;
 };

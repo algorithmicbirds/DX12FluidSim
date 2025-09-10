@@ -14,4 +14,5 @@ namespace ComputeRootParams
 constexpr UINT ParticleSRV_t0 = 0;
 constexpr UINT TimerCB_b0 = 1;
 constexpr UINT BoundingBoxCB_b1 = 2;
+constexpr UINT SimParamsCB_b2 = 3;
 } // namespace ComputeRootParams
