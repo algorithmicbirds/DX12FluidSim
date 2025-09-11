@@ -17,6 +17,8 @@ struct VSOutput
     float4 Position : SV_POSITION;
     float3 Color : COLOR;
     float2 uv : TEXCOORD;
+    float ParticleRadius : TEXCOORD1;
+    float ParticleDensity : TEXCOORD2;
 };
 
 VSOutput VSMain(uint vertexID : SV_VertexID)
@@ -49,6 +51,8 @@ VSOutput VSMain(uint vertexID : SV_VertexID)
     output.Position = mul(float4(pos, 1.0f), ViewProjection);
     output.Color = float3(1, 0.5, 0);
     output.uv = quadUVs[mapping[cornerID]];
+    output.ParticleDensity = p.Density;
+    output.ParticleRadius = p.ParticleRadius;
     return output;
 }
 

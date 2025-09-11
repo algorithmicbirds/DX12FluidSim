@@ -1,6 +1,7 @@
 #include "DXComputePipeline.hpp"
 #include "Shared/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
+#include <random>
 
 DXComputePipeline::DXComputePipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
 
@@ -11,77 +12,133 @@ void DXComputePipeline::CreatePipeline(const std::string &CSFilePath)
     std::vector<char> CSCode = Utils::ReadFile(CSFilePath);
 
     CreateDescHeap();
-    CreateUAVDesc();
-    CreateSRVDesc();
     CreatePipelineState(CSCode);
 }
 
 void DXComputePipeline::CreateDescHeap()
 {
     D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
-    HeapDesc.NumDescriptors = 2;
+    HeapDesc.NumDescriptors = 3;
     HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
     DX_VALIDATE(DeviceRef.CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DescriptorHeap)), DescriptorHeap);
-
-    auto gpuStart = DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-    auto handleSize = DeviceRef.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    UAVGPUHandle = gpuStart;
-    SRVGPUHandle.ptr = gpuStart.ptr + handleSize;
-}
-
-void DXComputePipeline::CreateUAVDesc()
-{
-    D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc{};
-    UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-    UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-    UAVDesc.Buffer.NumElements = ParticleCount;
-    UAVDesc.Buffer.StructureByteStride = sizeof(Particle);
-    UAVDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-
-    DeviceRef.CreateUnorderedAccessView(
-        ParticleData.DefaultBuffer.Get(), nullptr, &UAVDesc, DescriptorHeap->GetCPUDescriptorHandleForHeapStart()
+    ParticleUAVGPUHandle = Utils::CreateBufferDescriptor(
+        DeviceRef,
+        DescriptorType::UAV,
+        ParticleData.DefaultBuffer,
+        DescriptorHeap,
+        ParticleCount,
+        sizeof(ParticleStructuredBuffer),
+        0
     );
-}
 
-void DXComputePipeline::CreateSRVDesc()
-{
-    D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc{};
-    SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-    SRVDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-    SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    SRVDesc.Buffer.NumElements = ParticleCount;
-    SRVDesc.Buffer.StructureByteStride = sizeof(Particle);
-    SRVDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+    ParticleSRVGPUHandle = Utils::CreateBufferDescriptor(
+        DeviceRef,
+        DescriptorType::SRV,
+        ParticleData.DefaultBuffer,
+        DescriptorHeap,
+        ParticleCount,
+        sizeof(ParticleStructuredBuffer),
+        1
+    );
 
-    UINT HandleSize = DeviceRef.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    D3D12_CPU_DESCRIPTOR_HANDLE SRVHandle = DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    SRVHandle.ptr += HandleSize;
-
-    DeviceRef.CreateShaderResourceView(ParticleData.DefaultBuffer.Get(), &SRVDesc, SRVHandle);
+    DebugUAVGPUHandle = Utils::CreateBufferDescriptor(
+        DeviceRef,
+        DescriptorType::UAV,
+        GPUDebugResourcesData.DefaultBuffer,
+        DescriptorHeap,
+        ParticleCount,
+        sizeof(DebugStructuredBuffer),
+        2
+    );
 }
 
 void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count)
 {
     ParticleCount = Count;
-    UINT BufferSize = sizeof(Particle) * ParticleCount;
+    UINT StructuredBufferSize = sizeof(ParticleStructuredBuffer) * ParticleCount;
+    std::vector<ParticleStructuredBuffer> particleData(ParticleCount);
 
-    std::vector<Particle> particleData(ParticleCount);
+    ArrangeParticlesInSquare(particleData);
 
+    Utils::CreateUploadBuffer(
+        DeviceRef,
+        CmdList,
+        StructuredBufferSize,
+        particleData.data(),
+        ParticleData.DefaultBuffer,
+        ParticleData.UploadBuffer,
+        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+    );
+
+    UINT DebugBufSize = sizeof(DebugStructuredBuffer) * ParticleCount;
+
+    GPUDebugResourcesData.DefaultBuffer = Utils::CreateBuffer(
+        DeviceRef,
+        DebugBufSize,
+        D3D12_HEAP_TYPE_DEFAULT,
+        D3D12_RESOURCE_STATE_COMMON,
+        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+    );
+
+    GPUDebugResourcesData.ReadBackBuffer =
+        Utils::CreateBuffer(DeviceRef, DebugBufSize, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST);
+}
+
+void DXComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
+{
+    if (!GPUDebugResourcesData.DefaultBuffer || !GPUDebugResourcesData.ReadBackBuffer)
+        return;
+
+    Utils::TransitionResoure(
+        CmdList,
+        GPUDebugResourcesData.DefaultBuffer.Get(),
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_COPY_SOURCE
+    );
+
+    CmdList->CopyResource(GPUDebugResourcesData.ReadBackBuffer.Get(), GPUDebugResourcesData.DefaultBuffer.Get());
+
+    Utils::TransitionResoure(
+        CmdList,
+        GPUDebugResourcesData.DefaultBuffer.Get(),
+        D3D12_RESOURCE_STATE_COPY_SOURCE,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+    );
+
+    DebugStructuredBuffer *mappedData = nullptr;
+    D3D12_RANGE readRange{0, sizeof(DebugStructuredBuffer) * ParticleCount};
+    GPUDebugResourcesData.ReadBackBuffer->Map(0, &readRange, reinterpret_cast<void **>(&mappedData));
+
+    for (UINT i = 0; i < ParticleCount; ++i)
+    {
+        printf(
+            "Particle %u: Density = %f, ParticleCount = %u\n",
+            i,
+            mappedData[i].DebugDensity,
+            mappedData[i].DebugParticleCount
+        );
+    }
+
+    D3D12_RANGE writtenRange{0, 0};
+    GPUDebugResourcesData.ReadBackBuffer->Unmap(0, &writtenRange);
+}
+
+void DXComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData)
+{
     int particlesPerRow = (int)sqrt(ParticleCount);
     int particlesPerCol = (ParticleCount - 1) / particlesPerRow + 1;
 
-    float particleSpacing = 0.3f;
+    float particleSpacing = 0.05f;
 
     float gridWidth = particlesPerRow * (2 * particleData[0].ParticleRadius + particleSpacing);
     float gridHeight = particlesPerCol * (2 * particleData[0].ParticleRadius + particleSpacing);
 
-    for (int i = 0; i < ParticleCount; ++i)
+    for (UINT i = 0; i < ParticleCount; ++i)
     {
-        Particle &p = particleData[i];
-
+        ParticleStructuredBuffer &p = particleData[i];
+        p.ParticleCount = ParticleCount;
         int row = i / particlesPerRow;
         int col = i % particlesPerRow;
 
@@ -93,16 +150,6 @@ void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdLi
 
         p.Velocity = {0.0f, 0.0f, 0.0f};
     }
-
-    Utils::CreateUploadBuffer(
-        DeviceRef,
-        CmdList,
-        BufferSize,
-        particleData.data(),
-        ParticleData.DefaultBuffer,
-        ParticleData.UploadBuffer,
-        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-    );
 }
 
 void DXComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
@@ -117,7 +164,7 @@ void DXComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
     DX_VALIDATE(DeviceRef.CreateComputePipelineState(&Desc, IID_PPV_ARGS(&PipelineState)), PipelineState);
 }
 
-void DXComputePipeline::Dispatch(ID3D12GraphicsCommandList7 *CmdList)
+void DXComputePipeline::BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList)
 {
     CmdList->SetPipelineState(PipelineState.Get());
     CmdList->SetComputeRootSignature(RootSignature.Get());

@@ -2,7 +2,7 @@
 #include "DebugLayer/DebugMacros.hpp"
 #include "D3D/DXSwapchain.hpp"
 #include "D3D/DXContext.hpp"
-#include "Shared/SimInitials.hpp"
+#include "Shared/SimData.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_dx12.h>
@@ -57,7 +57,7 @@ void UI::CreateDescHeap()
     Desc.NumDescriptors = 1;
     Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-    DX_VALIDATE(ContextRef.GetDevice()->CreateDescriptorHeap(&Desc, IID_PPV_ARGS(&ImguiHeap)), ImguiHeap);
+    DX_VALIDATE(ContextRef.GetDevice()->CreateDescriptorHeap(&Desc, IID_PPV_ARGS(&ImguiHeap)), ImguiHeap, __FUNCSIG__);
 }
 
 void UI::NewFrame()

@@ -8,7 +8,7 @@
 #include "Renderer/Mesh.hpp"
 #include "Renderer/GameObject.hpp"
 #include <unordered_map>
-#include "Shared/SimInitials.hpp"
+#include "Shared/SimData.hpp"
 
 class DXGraphicsPipeline;
 class DXSwapchain;
@@ -38,6 +38,19 @@ template <typename T> struct ConstantBuffer
     void Update(const T &Data) { memcpy(MappedPtr, &Data, sizeof(T)); }
 };
 
+struct PrecomputedParticleGPUData
+{
+    ComPtr<ID3D12Resource2> DefaultBuffer;
+    ComPtr<ID3D12Resource2> UploadBuffer;
+    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
+};
+
+struct PrecomputedParticleConstants
+{
+    float Poly6SmoothingRadiusSquared;
+    float Poly6KernelConst;
+};
+
 struct CameraConstant
 {
     DirectX::XMMATRIX ViewProjection;
@@ -64,6 +77,18 @@ struct SimParamsConstants
     float Gravity = -9.81f;
     float Damping = 1.0f;
     UINT Pause = 0;
+};
+
+struct DebugConstants
+{
+    float Density;
+};
+
+struct DebugConstantGPUData
+{
+    ComPtr<ID3D12Resource2> DefaultBuffer;
+    ComPtr<ID3D12Resource2> ReadBackBuffer;
+    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
 class Renderer
@@ -96,6 +121,7 @@ private:
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void UpdatePerFrameData(float DeltaTime)
     {
@@ -113,11 +139,15 @@ private:
     std::unique_ptr<DXGraphicsPipeline> MeshPipeline;
     std::unique_ptr<DXComputePipeline> ParticleComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
+    std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
 
     std::unordered_map<GameObject *, GameObjectGPUData> GameObjectResources;
     std::vector<GameObject *> RegisteredObjects;
 
-    UINT ParticleCount = 30;
+    UINT ParticleCount = 1024;
+    PrecomputedParticleGPUData ParticleBuffer;
+    DebugConstants DebugConst;
+
 
     BoundingBoxConstant BoundingBoxCPU{
         {-SimInitials::BoundingBoxWidth, -SimInitials::BoundingBoxHeight},

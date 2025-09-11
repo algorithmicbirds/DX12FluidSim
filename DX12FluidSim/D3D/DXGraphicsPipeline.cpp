@@ -89,16 +89,21 @@ D3D12_BLEND_DESC DXGraphicsPipeline::InitBlendDesc()
     D3D12_BLEND_DESC BlendDesc{};
     BlendDesc.AlphaToCoverageEnable = FALSE;
     BlendDesc.IndependentBlendEnable = FALSE;
-    BlendDesc.RenderTarget[0].BlendEnable = FALSE;
-    BlendDesc.RenderTarget[0].LogicOpEnable = FALSE;
-    BlendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
-    BlendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
-    BlendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    BlendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ZERO;
-    BlendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-    BlendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-    BlendDesc.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
-    BlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+    for (int i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+    {
+        BlendDesc.RenderTarget[i].BlendEnable = TRUE;
+        BlendDesc.RenderTarget[i].LogicOpEnable = FALSE;
+        BlendDesc.RenderTarget[i].SrcBlend = D3D12_BLEND_ONE;
+        BlendDesc.RenderTarget[i].DestBlend = D3D12_BLEND_ONE;
+        BlendDesc.RenderTarget[i].BlendOp = D3D12_BLEND_OP_ADD;
+        BlendDesc.RenderTarget[i].SrcBlendAlpha = D3D12_BLEND_ONE;
+        BlendDesc.RenderTarget[i].DestBlendAlpha = D3D12_BLEND_ONE;
+        BlendDesc.RenderTarget[i].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        BlendDesc.RenderTarget[i].LogicOp = D3D12_LOGIC_OP_NOOP;
+        BlendDesc.RenderTarget[i].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    }
+
     return BlendDesc;
 }
 
@@ -122,7 +127,7 @@ D3D12_DEPTH_STENCIL_DESC DXGraphicsPipeline::InitDepthStencilDesc()
     return DepthStencilDesc;
 }
 
-void DXGraphicsPipeline::Dispatch(ID3D12GraphicsCommandList7 *CmdList) {
+void DXGraphicsPipeline::BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList) {
     CmdList->SetPipelineState(PipelineStateObject.Get());
     CmdList->SetGraphicsRootSignature(RootSignature.Get());
 };

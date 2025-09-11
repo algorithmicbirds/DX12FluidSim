@@ -15,11 +15,25 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     Range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
     Range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
 
+   // u1
+    D3D12_DESCRIPTOR_RANGE1 DebugRange = {};
+    DebugRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    DebugRange.NumDescriptors = 1;
+    DebugRange.BaseShaderRegister = 1;
+    DebugRange.RegisterSpace = 0;
+    DebugRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+    DebugRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE;
+
     D3D12_ROOT_DESCRIPTOR_TABLE1 Table = {};
     Table.NumDescriptorRanges = 1;
     Table.pDescriptorRanges = &Range;
 
-    D3D12_ROOT_PARAMETER1 RootParam[4] = {};
+    
+    D3D12_ROOT_DESCRIPTOR_TABLE1 DebugTable = {};
+    DebugTable.NumDescriptorRanges = 1;
+    DebugTable.pDescriptorRanges = &DebugRange;
+
+    D3D12_ROOT_PARAMETER1 RootParam[6] = {};
     RootParam[ComputeRootParams::ParticleSRV_t0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     RootParam[ComputeRootParams::ParticleSRV_t0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     RootParam[ComputeRootParams::ParticleSRV_t0].DescriptorTable = Table;
@@ -38,6 +52,15 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     RootParam[ComputeRootParams::SimParamsCB_b2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     RootParam[ComputeRootParams::SimParamsCB_b2].Descriptor.ShaderRegister = 2;
     RootParam[ComputeRootParams::SimParamsCB_b2].Descriptor.RegisterSpace = 0;
+
+    RootParam[ComputeRootParams::PrecomputedKernalCB_b3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    RootParam[ComputeRootParams::PrecomputedKernalCB_b3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    RootParam[ComputeRootParams::PrecomputedKernalCB_b3].Descriptor.ShaderRegister = 3;
+    RootParam[ComputeRootParams::PrecomputedKernalCB_b3].Descriptor.RegisterSpace = 0;
+
+    RootParam[ComputeRootParams::DebugSRV_t1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    RootParam[ComputeRootParams::DebugSRV_t1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    RootParam[ComputeRootParams::DebugSRV_t1].DescriptorTable = DebugTable;
 
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootDesc = {};
     RootDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;

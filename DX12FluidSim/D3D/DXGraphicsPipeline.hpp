@@ -15,11 +15,10 @@ public:
 public:
     void SetRootSignature(ComPtr<ID3D12RootSignature> InRootSignature) { RootSignature = InRootSignature; }
     void CreatePipeline(const std::string &VertexShaderPath, const std::string &PixelShaderPath);
-    void Dispatch(ID3D12GraphicsCommandList7 *CmdList);
+    void BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList);
     void SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType) { PrimitiveTopologyType = primitiveTopologyType; }
 
 private:
-    bool Init();
     void CreatePipelineState(std::vector<char> &VertexShaderCode, std::vector<char> &PixelShaderCode);
 
     // Initializers
