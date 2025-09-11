@@ -4,6 +4,13 @@
 #include <vector>
 #include <string>
 
+
+enum class DescriptorType
+{
+    UAV,
+    SRV
+};
+
 namespace Utils
 {
 void TransitionResoure(
@@ -32,6 +39,14 @@ void CreateUploadBuffer(
 void CreateDynamicUploadBuffer(
     ID3D12Device14 &Device, UINT BufferSize, ComPtr<ID3D12Resource2> &UploadBuffer, void *&MappedPtr
 );
-
+D3D12_GPU_DESCRIPTOR_HANDLE CreateBufferDescriptor(
+    ID3D12Device14 &Device,
+    DescriptorType DescType,
+    ComPtr<ID3D12Resource2> DefaultBuffer,
+    ComPtr<ID3D12DescriptorHeap> DescHeap,
+    UINT NumOfElems,
+    UINT Stride,
+    UINT DescriptorIndex = 0
+);
 std::vector<char> ReadFile(const std::string &FilePath);
 } // namespace Utils

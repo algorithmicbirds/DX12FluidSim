@@ -1,6 +1,7 @@
 #include "Shared/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 #include <fstream>
+
 namespace Utils
 {
 void TransitionResoure(
@@ -103,6 +104,51 @@ void CreateDynamicUploadBuffer(
 
     UploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&MappedPtr));
 }
+D3D12_GPU_DESCRIPTOR_HANDLE CreateBufferDescriptor(
+    ID3D12Device14 &Device,
+    DescriptorType DescType,
+    ComPtr<ID3D12Resource2> DefaultBuffer,
+    ComPtr<ID3D12DescriptorHeap> DescHeap,
+    UINT NumOfElems,
+    UINT Stride,
+    UINT DescriptorIndex
+)
+{
+    UINT HandleSize = Device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle = DescHeap->GetGPUDescriptorHandleForHeapStart();
+    GPUHandle.ptr += DescriptorIndex * HandleSize;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle = DescHeap->GetCPUDescriptorHandleForHeapStart();
+    CPUHandle.ptr += DescriptorIndex * HandleSize;
+
+    if (DescType == DescriptorType::UAV)
+    {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC Desc{};
+        Desc.Format = DXGI_FORMAT_UNKNOWN;
+        Desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+        Desc.Buffer.NumElements = NumOfElems;
+        Desc.Buffer.StructureByteStride = Stride;
+        Desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+
+        Device.CreateUnorderedAccessView(
+            DefaultBuffer.Get(), nullptr, &Desc, CPUHandle
+        );
+    }
+    else if (DescType == DescriptorType::SRV)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC Desc{};
+        Desc.Format = DXGI_FORMAT_UNKNOWN;
+        Desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        Desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        Desc.Buffer.NumElements = NumOfElems;
+        Desc.Buffer.StructureByteStride = Stride;
+        Desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+
+        Device.CreateShaderResourceView(DefaultBuffer.Get(), &Desc, CPUHandle);
+    }
+
+    return GPUHandle;
+}
 std::vector<char> ReadFile(const std::string &FilePath)
 {
     std::ifstream File{FilePath, std::ios::ate | std::ios::binary};
@@ -119,5 +165,4 @@ std::vector<char> ReadFile(const std::string &FilePath)
 
     return Buffer;
 }
-}
-
+} // namespace Utils
