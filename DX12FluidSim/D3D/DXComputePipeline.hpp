@@ -47,7 +47,11 @@ public:
     void ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
     void CreateDensityTexture();
     void ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData);
-    
+    D3D12_GPU_VIRTUAL_ADDRESS GetDensityTexGPUAddress() const
+    {
+        return DensityTexture->GetGPUVirtualAddress();
+    }
+
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleSRVGPUHandle() const { return ParticleSRVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleUAVGPUHandle() const { return ParticleUAVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetDebugUAVGPUHandle() const { return DebugUAVGPUHandle; }

@@ -7,6 +7,8 @@ struct VSOutput
     float2 uv : TEXCOORD;
 };
 
+//StructuredBuffer<Particle> gParticlesVS : register(t0);
+
 VSOutput VSMain(uint vertexID : SV_VertexID)
 {
     VSOutput output;

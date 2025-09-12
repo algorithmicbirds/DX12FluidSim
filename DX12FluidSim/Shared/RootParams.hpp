@@ -9,6 +9,7 @@ constexpr UINT TimerCB_b2 = 3;
 constexpr UINT BoundingBoxCB_b3 = 4;
 constexpr UINT ScreenCB_b4 = 5;
 constexpr UINT DensityTexSRV_t1 = 6;
+//constexpr UINT DebugUAV_u0 = 7;
 } // namespace GraphicsRootParams
 
 namespace ComputeRootParams
@@ -20,5 +21,5 @@ constexpr UINT SimParamsCB_b2 = 3;
 constexpr UINT PrecomputedKernalCB_b3 = 4;
 constexpr UINT DebugUAV_t1 = 5;
 constexpr UINT DensityTexUAV_t2 = 6;
-
+constexpr UINT ScreenCB_b3 = 7;
 } // namespace ComputeRootParams

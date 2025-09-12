@@ -19,7 +19,6 @@ struct DebugData
 
 RWStructuredBuffer<Particle> gParticles : register(u0);
 RWStructuredBuffer<DebugData> DebugParticles : register(u1);
-RWTexture2D<float> gDensityTex : register(u2);
 
 cbuffer TimeBufferCompute : register(b0)
 {
@@ -71,41 +70,50 @@ float CalculateDensity(uint particleIndex)
     return density;
 }
 
+void resolveCollision(Particle particle)
+{
+    float SurfaceOffset = 0.001f;
+    
+    if (particle.Position.x - particle.ParticleRadius < BBMin.x)
+    {
+        particle.Position.x = BBMin.x + particle.ParticleRadius + SurfaceOffset;
+        particle.Velocity.x *= -Damping;
+    }
+    else if (particle.Position.x + particle.ParticleRadius > BBMax.x)
+    {
+        particle.Position.x = BBMax.x - particle.ParticleRadius - SurfaceOffset;
+        particle.Velocity.x *= -Damping;
+    }
+
+    if (particle.Position.y - particle.ParticleRadius < BBMin.y)
+    {
+        particle.Position.y = BBMin.y + particle.ParticleRadius + SurfaceOffset;
+        particle.Velocity.y *= -Damping;
+    }
+    else if (particle.Position.y + particle.ParticleRadius > BBMax.y)
+    {
+        particle.Position.y = BBMax.y - particle.ParticleRadius - SurfaceOffset;
+        particle.Velocity.y *= -Damping;
+    }
+}
+
 [numthreads(256, 1, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
     uint i = DTid.x;
-    Particle p = gParticles[i];
-    float SurfaceOffset = 0.001f;
-    p.Density = CalculateDensity(i);
+    Particle particle = gParticles[i];
+    particle.Density = CalculateDensity(i);
+    DebugParticles[i].DebugDensity = CalculateDensity(i);
+    DebugParticles[i].DebugParticleCount = ParticleCount;
     
     if (Pause == 1)
     {
-        p.Velocity += float3(0.0f, -Gravity, 0.0f) * DeltaTimeCompute;
-        p.Position += p.Velocity * DeltaTimeCompute;
-
-        if (p.Position.x - p.ParticleRadius < BBMin.x)
-        {
-            p.Position.x = BBMin.x + p.ParticleRadius + SurfaceOffset;
-            p.Velocity.x *= -Damping;
-        }
-        else if (p.Position.x + p.ParticleRadius > BBMax.x)
-        {
-            p.Position.x = BBMax.x - p.ParticleRadius - SurfaceOffset;
-            p.Velocity.x *= -Damping;
-        }
-
-        if (p.Position.y - p.ParticleRadius < BBMin.y)
-        {
-            p.Position.y = BBMin.y + p.ParticleRadius + SurfaceOffset;
-            p.Velocity.y *= -Damping;
-        }
-        else if (p.Position.y + p.ParticleRadius > BBMax.y)
-        {
-            p.Position.y = BBMax.y - p.ParticleRadius - SurfaceOffset;
-            p.Velocity.y *= -Damping;
-        }
+        particle.Velocity += float3(0.0f, -Gravity, 0.0f) * DeltaTimeCompute;
+        particle.Position += particle.Velocity * DeltaTimeCompute;
+         
+        resolveCollision(particle);
+       
     }
 
-    gParticles[i] = p;
+    gParticles[i] = particle;
 }

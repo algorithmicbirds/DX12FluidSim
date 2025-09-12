@@ -79,7 +79,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ui.OnCollisionDampingChanged.connect<&Renderer::SetCollisionDampingData>(Renderer);
         ui.OnPauseToggled.connect<&Renderer::SetPauseToggle>(Renderer);
         Scene.FlushToRenderer(CmdList);
-
+        D3D12_FEATURE_DATA_D3D12_OPTIONS Options = {};
+        Context.GetDevice()->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &Options, sizeof(Options));
+        std::cout << "Typed UAV Load Additional Formats: " << Options.TypedUAVLoadAdditionalFormats << "\n";
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
         {

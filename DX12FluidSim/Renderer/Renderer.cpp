@@ -49,8 +49,26 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
     //RunParticlesGraphicsPipeline(CmdList);
+    {
+        D3D12_RESOURCE_BARRIER Barrier{};
+        Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        Barrier.Transition.pResource = ParticleComputePipeline->GetParticleBuffer();
+        Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        CmdList->ResourceBarrier(1, &Barrier);
+    }
     RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
+    D3D12_RESOURCE_BARRIER Barrier{};
+    {
+        Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        Barrier.Transition.pResource = ParticleComputePipeline->GetParticleBuffer();
+        Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        CmdList->ResourceBarrier(1, &Barrier);
+    }
 }
 
 void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
@@ -68,6 +86,7 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, BoundingBoxCB.GPUAddress);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::SimParamsCB_b2, SimParamsCB.GPUAddress);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ScreenCB_b3, ScreenCB.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
@@ -92,6 +111,8 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
     ParticleGraphicsPipeline->BindRootAndPSO(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerCB.GPUAddress);
+    ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
         GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleSRVGPUHandle()
     );
@@ -110,9 +131,17 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerCB.GPUAddress);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::ScreenCB_b4, ScreenCB.GPUAddress);
+    ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(_countof(Heaps), Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
         GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleSRVGPUHandle()
     );
+    CmdList->SetGraphicsRootDescriptorTable(
+        GraphicsRootParams::DensityTexSRV_t1, ParticleComputePipeline->GetDesnsityTexSRVGPUHandle()
+    );
+  /*  CmdList->SetGraphicsRootDescriptorTable(
+        GraphicsRootParams::DebugUAV_u0, DebugGPUDescHandle
+    );*/
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
 
@@ -126,6 +155,8 @@ void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdLis
     BoundingBoxPipeline->BindRootAndPSO(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBoxCB_b3, BoundingBoxCB.GPUAddress);
+    ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
     constexpr UINT BoxVertices = 5;
@@ -152,6 +183,8 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     PrecompParticleData.Poly6KernelConst = 4.0f / (PI * Pol6SmoothingRadiusPow8);
     PrecompParticleData.ParticleCount = ParticleCount;
 
+    CreateDebugUAVAndDesc();
+
     Utils::CreateUploadBuffer(
         DeviceRef,
         CmdList,
@@ -167,6 +200,7 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     CameraCB.Initialize(DeviceRef);
     BoundingBoxCB.Initialize(DeviceRef);
     ScreenCB.Initialize(DeviceRef);
+    ScreenCB.Update(ScreenConstCPU);
     UpdateBoundingBoxData();
     UpdateSimParamsData();
 }
@@ -195,6 +229,63 @@ void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList
 
     GameObjectResources[GameObj] = std::move(Data);
     RegisteredObjects.push_back(GameObj);
+}
+
+void Renderer::CreateDebugUAVAndDesc()
+{
+    UINT DebugBufSize = sizeof(PixelDebugStructuredBuffer) * ParticleCount;
+    GPUDebug.DefaultBuffer = Utils::CreateBuffer(
+        DeviceRef,
+        DebugBufSize,
+        D3D12_HEAP_TYPE_DEFAULT,
+        D3D12_RESOURCE_STATE_COMMON,
+        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+    );
+
+    GPUDebug.ReadBackBuffer =
+        Utils::CreateBuffer(DeviceRef, DebugBufSize, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST);
+
+    D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
+    HeapDesc.NumDescriptors = 1;
+    HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    DX_VALIDATE(DeviceRef.CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DebugDescHeap)), DebugDescHeap);
+
+    DebugGPUDescHandle = Utils::CreateBufferDescriptor(
+        DeviceRef,
+        DescriptorType::UAV,
+        GPUDebug.DefaultBuffer,
+        DebugDescHeap,
+        ParticleCount,
+        sizeof(PixelDebugStructuredBuffer),
+        0
+    );
+}
+
+void Renderer::ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
+{
+    Utils::TransitionResoure(
+        CmdList, GPUDebug.DefaultBuffer.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE
+    );
+
+    CmdList->CopyResource(GPUDebug.ReadBackBuffer.Get(), GPUDebug.DefaultBuffer.Get());
+
+    Utils::TransitionResoure(
+        CmdList, GPUDebug.DefaultBuffer.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+    );
+
+    void *pData = nullptr;
+    D3D12_RANGE readRange{0, sizeof(PixelDebugStructuredBuffer) * ParticleCount};
+    GPUDebug.ReadBackBuffer->Map(0, &readRange, &pData);
+
+    PixelDebugStructuredBuffer *debugData = reinterpret_cast<PixelDebugStructuredBuffer *>(pData);
+    for (UINT i = 0; i < ParticleCount; ++i)
+    {
+        
+        printf("Particle %u: density = %f\n", i, debugData[i].Density);
+    }
+
+    GPUDebug.ReadBackBuffer->Unmap(0, nullptr);
 }
 
 void Renderer::RenderGameObject(ID3D12GraphicsCommandList7 *CmdList)

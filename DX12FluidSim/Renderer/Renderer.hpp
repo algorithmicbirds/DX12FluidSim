@@ -93,7 +93,19 @@ struct DebugConstantGPUData
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
-struct ScreenConstantFrag {
+struct PixelGPUDebugResources
+{
+    ComPtr<ID3D12Resource2> DefaultBuffer;
+    ComPtr<ID3D12Resource2> ReadBackBuffer;
+};
+
+struct PixelDebugStructuredBuffer
+{
+    float Density;
+};
+
+struct ScreenConstantFrag
+{
     DirectX::XMFLOAT2 ScreenSize;
     UINT ParticleCount;
 };
@@ -110,6 +122,8 @@ public:
     void RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime);
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
     void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
+    void CreateDebugUAVAndDesc();
+    void ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
     void OnResize(float NewAspectRatio);
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
     void SetBoundingBoxHeight(float Height);
@@ -173,4 +187,11 @@ private:
     ConstantBuffer<BoundingBoxConstant> BoundingBoxCB;
     ConstantBuffer<SimParamsConstants> SimParamsCB;
     ConstantBuffer<ScreenConstantFrag> ScreenCB;
+
+    ComPtr<ID3D12DescriptorHeap> DebugDescHeap;
+
+    D3D12_GPU_DESCRIPTOR_HANDLE DebugGPUDescHandle;
+
+    
+    PixelGPUDebugResources GPUDebug;
 };
