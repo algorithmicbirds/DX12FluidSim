@@ -70,33 +70,6 @@ float CalculateDensity(uint particleIndex)
     return density;
 }
 
-void resolveCollision(Particle particle)
-{
-    float SurfaceOffset = 0.001f;
-    
-    if (particle.Position.x - particle.ParticleRadius < BBMin.x)
-    {
-        particle.Position.x = BBMin.x + particle.ParticleRadius + SurfaceOffset;
-        particle.Velocity.x *= -Damping;
-    }
-    else if (particle.Position.x + particle.ParticleRadius > BBMax.x)
-    {
-        particle.Position.x = BBMax.x - particle.ParticleRadius - SurfaceOffset;
-        particle.Velocity.x *= -Damping;
-    }
-
-    if (particle.Position.y - particle.ParticleRadius < BBMin.y)
-    {
-        particle.Position.y = BBMin.y + particle.ParticleRadius + SurfaceOffset;
-        particle.Velocity.y *= -Damping;
-    }
-    else if (particle.Position.y + particle.ParticleRadius > BBMax.y)
-    {
-        particle.Position.y = BBMax.y - particle.ParticleRadius - SurfaceOffset;
-        particle.Velocity.y *= -Damping;
-    }
-}
-
 [numthreads(256, 1, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
@@ -110,8 +83,30 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     {
         particle.Velocity += float3(0.0f, -Gravity, 0.0f) * DeltaTimeCompute;
         particle.Position += particle.Velocity * DeltaTimeCompute;
-         
-        resolveCollision(particle);
+        float SurfaceOffset = 0.001f;
+    
+        if (particle.Position.x - particle.ParticleRadius < BBMin.x)
+        {
+            particle.Position.x = BBMin.x + particle.ParticleRadius + SurfaceOffset;
+            particle.Velocity.x *= -Damping;
+        }
+        else if (particle.Position.x + particle.ParticleRadius > BBMax.x)
+        {
+            particle.Position.x = BBMax.x - particle.ParticleRadius - SurfaceOffset;
+            particle.Velocity.x *= -Damping;
+        }
+
+        if (particle.Position.y - particle.ParticleRadius < BBMin.y)
+        {
+            particle.Position.y = BBMin.y + particle.ParticleRadius + SurfaceOffset;
+            particle.Velocity.y *= -Damping;
+        }
+        else if (particle.Position.y + particle.ParticleRadius > BBMax.y)
+        {
+            particle.Position.y = BBMax.y - particle.ParticleRadius - SurfaceOffset;
+            particle.Velocity.y *= -Damping;
+        }
+        //resolveCollision(particle);
        
     }
 

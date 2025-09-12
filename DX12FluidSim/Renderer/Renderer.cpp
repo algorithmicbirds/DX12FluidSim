@@ -48,27 +48,9 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
-    //RunParticlesGraphicsPipeline(CmdList);
-    {
-        D3D12_RESOURCE_BARRIER Barrier{};
-        Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        Barrier.Transition.pResource = ParticleComputePipeline->GetParticleBuffer();
-        Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-        Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-        Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        CmdList->ResourceBarrier(1, &Barrier);
-    }
-    RunDensityVisualizationGraphicsPipeline(CmdList);
+    RunParticlesGraphicsPipeline(CmdList);
+    //RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
-    D3D12_RESOURCE_BARRIER Barrier{};
-    {
-        Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        Barrier.Transition.pResource = ParticleComputePipeline->GetParticleBuffer();
-        Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-        Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-        Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        CmdList->ResourceBarrier(1, &Barrier);
-    }
 }
 
 void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
@@ -86,11 +68,11 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, BoundingBoxCB.GPUAddress);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::SimParamsCB_b2, SimParamsCB.GPUAddress);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ScreenCB_b3, ScreenCB.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ScreenCB_b4, ScreenCB.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleUAVGPUHandle()
+        ComputeRootParams::ParticleUAV_t0, ParticleComputePipeline->GetParticleUAVGPUHandle()
     );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::DebugUAV_t1, ParticleComputePipeline->GetDebugUAVGPUHandle()
