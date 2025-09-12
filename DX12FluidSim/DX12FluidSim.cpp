@@ -8,6 +8,7 @@
 #include "Renderer/Scene.hpp"
 #include "FluidSimulation/FluidSimulation.hpp"
 #include "Window/UI.hpp"
+#include "Renderer/ConstantBuffers.hpp"
 
 #ifdef _DEBUG
 void InitConsole()
@@ -63,7 +64,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         Window Window;
         DXSwapchain Swapchain{Context, Window.GetHwnd()};
 
-        Renderer Renderer{Swapchain, *Context.GetDevice()};
+        
+        ConstantBuffers constantBuffers;
+        Renderer Renderer{Swapchain, *Context.GetDevice(), constantBuffers};
         Renderer.SetViewport(Swapchain.GetViewport());
         ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList();
 
@@ -71,17 +74,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
         Scene Scene{Renderer, *Context.GetDevice()};
 
-        FluidSimulation FluidSim{Scene, Renderer};
         UI ui{Context, Swapchain, Window.GetHwnd()};
-        ui.OnHeightChanged.connect<&Renderer::SetBoundingBoxHeight>(Renderer);
-        ui.OnWidthChanged.connect<&Renderer::SetBoundingBoxWidth>(Renderer);
-        ui.OnGravityChanged.connect<&Renderer::SetGravityData>(Renderer);
-        ui.OnCollisionDampingChanged.connect<&Renderer::SetCollisionDampingData>(Renderer);
-        ui.OnPauseToggled.connect<&Renderer::SetPauseToggle>(Renderer);
+        ui.OnHeightChanged.connect<&ConstantBuffers::SetBoundingBoxHeight>(constantBuffers);
+        ui.OnWidthChanged.connect<&ConstantBuffers::SetBoundingBoxWidth>(constantBuffers);
+        ui.OnGravityChanged.connect<&ConstantBuffers::SetGravityData>(constantBuffers);
+        ui.OnCollisionDampingChanged.connect<&ConstantBuffers::SetCollisionDampingData>(constantBuffers);
+        ui.OnPauseToggled.connect<&ConstantBuffers::SetPauseToggle>(constantBuffers);
         Scene.FlushToRenderer(CmdList);
-        D3D12_FEATURE_DATA_D3D12_OPTIONS Options = {};
-        Context.GetDevice()->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &Options, sizeof(Options));
-        std::cout << "Typed UAV Load Additional Formats: " << Options.TypedUAVLoadAdditionalFormats << "\n";
+
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
         {
@@ -110,9 +110,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             {
                 Context.Flush(Swapchain.GetFrameCount());
                 Swapchain.Resize();
-                Renderer.OnResize(Swapchain.GetAspectRatio());
+                constantBuffers.OnResize(Swapchain.GetAspectRatio());
                 Window.ClearResizeFlags();
-                Renderer.SetHeightAndWidth(Swapchain.GetHeight(), Swapchain.GetWidth());
+                constantBuffers.SetHeightAndWidth(Swapchain.GetHeight(), Swapchain.GetWidth());
                 SetViewPort(Swapchain, Renderer);
             }
 

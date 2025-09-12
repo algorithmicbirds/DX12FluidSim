@@ -10,7 +10,8 @@
 
 #define PI 3.14159265f
 
-Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRef(Swapchain), DeviceRef(Device)
+Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device, ConstantBuffers &ConstantBuffers)
+    : ConstantBuffersRef(ConstantBuffers), SwapchainRef(Swapchain), DeviceRef(Device)
 {
     ComPtr<ID3D12RootSignature> RootSignature = RootSignature::CreateGraphicsRootSig(Device);
     MeshPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
@@ -45,7 +46,7 @@ Renderer::~Renderer() {}
 
 void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
 {
-    UpdatePerFrameData(DeltaTime);
+    ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
@@ -64,11 +65,11 @@ void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleComputePipeline->BindRootAndPSO(CmdList);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, TimerCB.GPUAddress);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, BoundingBoxCB.GPUAddress);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::SimParamsCB_b2, SimParamsCB.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, ConstantBuffersRef.GetTimerGPUVirtualAddress());
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::SimParamsCB_b2, ConstantBuffersRef.GetSimParamsGPUVirtualAddress());
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ScreenCB_b4, ScreenCB.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ScreenCB_b4, ConstantBuffersRef.GetScreenParamsGPUVirtualAddress());
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
@@ -91,8 +92,8 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleGraphicsPipeline->BindRootAndPSO(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerCB.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress());
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
@@ -110,9 +111,9 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     DensityVisualizationGraphicsPipeline->BindRootAndPSO(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerCB.GPUAddress);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::ScreenCB_b4, ScreenCB.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress());
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, ConstantBuffersRef.GetTimerGPUVirtualAddress());
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::ScreenCB_b4, ConstantBuffersRef.GetScreenParamsGPUVirtualAddress());
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(_countof(Heaps), Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
@@ -135,8 +136,8 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     BoundingBoxPipeline->BindRootAndPSO(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBoxCB_b3, BoundingBoxCB.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress());
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBoxCB_b3, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->RSSetViewports(1, &Viewport);
@@ -152,10 +153,6 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     ParticleComputePipeline->SetRootSignature(RootSignature::CreateComputeRootSig(DeviceRef));
     ParticleComputePipeline->CreateStructuredBuffer(CmdList, ParticleCount);
     ParticleComputePipeline->CreatePipeline(SHADER_PATH "ParticleSystem/Particle_cs.cso");
-
-    Camera.SetPosition({0.0f, 0.0f, -5.0f});
-    Camera.SetTarget({0.0f, 0.0f, 0.0f});
-    Camera.SetLens(DirectX::XM_PIDIV4, SwapchainRef.GetAspectRatio(), 0.1f, 1000.0f);
 
     UINT PrecompParticleCosnstBufferSize = sizeof(PrecomputedParticleConstants);
     PrecomputedParticleConstants PrecompParticleData{};
@@ -175,23 +172,9 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
         ParticleBuffer.DefaultBuffer,
         ParticleBuffer.UploadBuffer
     );
-    ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress();
+    ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress(); 
 
-    SimParamsCB.Initialize(DeviceRef);
-    TimerCB.Initialize(DeviceRef);
-    CameraCB.Initialize(DeviceRef);
-    BoundingBoxCB.Initialize(DeviceRef);
-    ScreenCB.Initialize(DeviceRef);
-    ScreenCB.Update(ScreenConstCPU);
-    UpdateBoundingBoxData();
-    UpdateSimParamsData();
-}
-
-void Renderer::UpdateCameraBuffer()
-{
-    CameraConstant Data;
-    Data.ViewProjection = DirectX::XMMatrixTranspose(Camera.GetViewProjection());
-    CameraCB.Update(Data);
+    ConstantBuffersRef.InitializeBuffers(DeviceRef);
 }
 
 void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList)
@@ -284,54 +267,3 @@ void Renderer::RenderGameObject(ID3D12GraphicsCommandList7 *CmdList)
         CmdList->DrawIndexedInstanced(OBJ->GPUMesh->GetIndexCount(), 1, 0, 0, 0);
     }
 }
-
-void Renderer::UpdateShaderTime(float DeltaTime)
-{
-    TimerConstant Timer{};
-    Timer.DeltaTime = DeltaTime;
-    TimerCB.Update(Timer);
-}
-
-void Renderer::UpdateBoundingBoxData() { BoundingBoxCB.Update(BoundingBoxCPU); }
-
-void Renderer::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }
-
-void Renderer::SetBoundingBoxHeight(float Height)
-{
-    BoundingBoxCPU.Min.y = -Height;
-    BoundingBoxCPU.Max.y = Height;
-    UpdateBoundingBoxData();
-}
-
-void Renderer::SetBoundingBoxWidth(float Width)
-{
-    BoundingBoxCPU.Min.x = -Width;
-    BoundingBoxCPU.Max.x = Width;
-    UpdateBoundingBoxData();
-}
-
-void Renderer::SetGravityData(float Gravity)
-{
-    SimParamsCPU.Gravity = Gravity;
-    UpdateSimParamsData();
-}
-
-void Renderer::SetCollisionDampingData(float CollisionDamping)
-{
-    SimParamsCPU.Damping = CollisionDamping;
-    UpdateSimParamsData();
-}
-
-void Renderer::SetPauseToggle(UINT PauseToggle)
-{
-    SimParamsCPU.Pause = PauseToggle;
-    UpdateSimParamsData();
-}
-
-void Renderer::SetHeightAndWidth(float Height, float Width)
-{
-    ScreenConstCPU.ScreenSize = {Width, Height};
-    ScreenCB.Update(ScreenConstCPU);
-}
-
-void Renderer::UpdateSimParamsData() { SimParamsCB.Update(SimParamsCPU); }
