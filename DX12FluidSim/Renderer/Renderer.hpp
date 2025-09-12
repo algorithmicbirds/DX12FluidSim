@@ -5,8 +5,6 @@
 #include "D3D/Vertex.hpp"
 #include <memory>
 #include "Renderer/Camera.hpp"
-#include "Renderer/Mesh.hpp"
-#include "Renderer/GameObject.hpp"
 #include <unordered_map>
 #include "Shared/SimData.hpp"
 #include "Renderer/ConstantBuffers.hpp"
@@ -14,14 +12,6 @@
 class DXGraphicsPipeline;
 class DXSwapchain;
 class DXComputePipeline;
-
-struct GameObjectGPUData
-{
-    ComPtr<ID3D12Resource2> TransformBuffer_Default;
-    ComPtr<ID3D12Resource2> TransformBuffer_Upload;
-    void *MappedPtr = nullptr;
-    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
-};
 
 struct PrecomputedParticleGPUData
 {
@@ -37,17 +27,6 @@ struct PrecomputedParticleConstants
     UINT ParticleCount;
 };
 
-
-struct PixelGPUDebugResources
-{
-    ComPtr<ID3D12Resource2> DefaultBuffer;
-    ComPtr<ID3D12Resource2> ReadBackBuffer;
-};
-
-struct PixelDebugStructuredBuffer
-{
-    float Density;
-};
 
 struct DebugConstants
 {
@@ -66,16 +45,10 @@ public:
 public:
     void RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime);
     void InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList);
-    void RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList);
-    void CreateDebugUAVAndDesc();
-    void ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
-
-    inline DXGraphicsPipeline *GetMeshPipeline() { return MeshPipeline.get(); }
 
 private:
 
-    void RenderGameObject(ID3D12GraphicsCommandList7 *CmdList);
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
@@ -91,22 +64,13 @@ private:
     ConstantBuffers &ConstantBuffersRef;
 
     std::unique_ptr<DXGraphicsPipeline> BoundingBoxPipeline;
-    std::unique_ptr<DXGraphicsPipeline> MeshPipeline;
     std::unique_ptr<DXComputePipeline> ParticleComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
-
-    std::unordered_map<GameObject *, GameObjectGPUData> GameObjectResources;
-    std::vector<GameObject *> RegisteredObjects;
 
     UINT ParticleCount = 1024;
     PrecomputedParticleGPUData ParticleBuffer;
     DebugConstants DebugConst;
 
-    ComPtr<ID3D12DescriptorHeap> DebugDescHeap;
 
-    D3D12_GPU_DESCRIPTOR_HANDLE DebugGPUDescHandle;
-
-    
-    PixelGPUDebugResources GPUDebug;
 };

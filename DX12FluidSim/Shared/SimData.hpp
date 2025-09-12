@@ -7,6 +7,7 @@ constexpr float BoundingBoxWidth = 3.5f;
 constexpr float CollisionDamping = 1.0f;
 constexpr float Gravity = 9.8f;
 constexpr UINT Pause = 0;
+constexpr UINT ParticleCount = 512;
 } // namespace SimInitials
 
 namespace ParticleInitialValues

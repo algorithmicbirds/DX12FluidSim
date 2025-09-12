@@ -14,10 +14,6 @@ Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device, ConstantBuffe
     : ConstantBuffersRef(ConstantBuffers), SwapchainRef(Swapchain), DeviceRef(Device)
 {
     ComPtr<ID3D12RootSignature> RootSignature = RootSignature::CreateGraphicsRootSig(Device);
-    MeshPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
-    MeshPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-    MeshPipeline->SetRootSignature(RootSignature);
-    MeshPipeline->CreatePipeline(SHADER_PATH "Triangle_vs.cso", SHADER_PATH "Triangle_ps.cso");
 
     BoundingBoxPipeline = std::make_unique<DXGraphicsPipeline>(DeviceRef);
     BoundingBoxPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
@@ -162,8 +158,6 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     PrecompParticleData.Poly6KernelConst = 4.0f / (PI * Pol6SmoothingRadiusPow8);
     PrecompParticleData.ParticleCount = ParticleCount;
 
-    CreateDebugUAVAndDesc();
-
     Utils::CreateUploadBuffer(
         DeviceRef,
         CmdList,
@@ -175,95 +169,4 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress(); 
 
     ConstantBuffersRef.InitializeBuffers(DeviceRef);
-}
-
-void Renderer::RegisterGameObject(GameObject *GameObj, ID3D12GraphicsCommandList7 *CmdList)
-{
-    GameObj->Transform.UpdateMatrix();
-    DirectX::XMFLOAT4X4 ModelMatrix = GameObj->Transform.ModelMatrix;
-    TransformConstants CBData{GameObj->Transform.ModelMatrix};
-
-    UINT CBSize = (sizeof(TransformConstants) + 255) & ~255;
-
-    GameObjectGPUData Data;
-    Utils::CreateUploadBuffer(
-        DeviceRef, CmdList, CBSize, &CBData, Data.TransformBuffer_Default, Data.TransformBuffer_Upload
-    );
-
-    Data.GPUAddress = Data.TransformBuffer_Upload->GetGPUVirtualAddress();
-
-    GameObjectResources[GameObj] = std::move(Data);
-    RegisteredObjects.push_back(GameObj);
-}
-
-void Renderer::CreateDebugUAVAndDesc()
-{
-    UINT DebugBufSize = sizeof(PixelDebugStructuredBuffer) * ParticleCount;
-    GPUDebug.DefaultBuffer = Utils::CreateBuffer(
-        DeviceRef,
-        DebugBufSize,
-        D3D12_HEAP_TYPE_DEFAULT,
-        D3D12_RESOURCE_STATE_COMMON,
-        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-    );
-
-    GPUDebug.ReadBackBuffer =
-        Utils::CreateBuffer(DeviceRef, DebugBufSize, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST);
-
-    D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
-    HeapDesc.NumDescriptors = 1;
-    HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    DX_VALIDATE(DeviceRef.CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DebugDescHeap)), DebugDescHeap);
-
-    DebugGPUDescHandle = Utils::CreateBufferDescriptor(
-        DeviceRef,
-        DescriptorType::UAV,
-        GPUDebug.DefaultBuffer,
-        DebugDescHeap,
-        ParticleCount,
-        sizeof(PixelDebugStructuredBuffer),
-        0
-    );
-}
-
-void Renderer::ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
-{
-    Utils::TransitionResoure(
-        CmdList, GPUDebug.DefaultBuffer.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE
-    );
-
-    CmdList->CopyResource(GPUDebug.ReadBackBuffer.Get(), GPUDebug.DefaultBuffer.Get());
-
-    Utils::TransitionResoure(
-        CmdList, GPUDebug.DefaultBuffer.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS
-    );
-
-    void *pData = nullptr;
-    D3D12_RANGE readRange{0, sizeof(PixelDebugStructuredBuffer) * ParticleCount};
-    GPUDebug.ReadBackBuffer->Map(0, &readRange, &pData);
-
-    PixelDebugStructuredBuffer *debugData = reinterpret_cast<PixelDebugStructuredBuffer *>(pData);
-    for (UINT i = 0; i < ParticleCount; ++i)
-    {
-        
-        printf("Particle %u: density = %f\n", i, debugData[i].Density);
-    }
-
-    GPUDebug.ReadBackBuffer->Unmap(0, nullptr);
-}
-
-void Renderer::RenderGameObject(ID3D12GraphicsCommandList7 *CmdList)
-{
-    for (auto *OBJ : RegisteredObjects)
-    {
-        OBJ->Transform.UpdateMatrix();
-        VALIDATE_PTR(OBJ->Pipeline);
-        OBJ->Pipeline->BindRootAndPSO(CmdList);
-        auto &Data = GameObjectResources[OBJ];
-        TransformConstants CBData{OBJ->Transform.ModelMatrix};
-        CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::ModelCB_b1, Data.GPUAddress);
-        OBJ->GPUMesh->Bind(CmdList);
-        CmdList->DrawIndexedInstanced(OBJ->GPUMesh->GetIndexCount(), 1, 0, 0, 0);
-    }
 }

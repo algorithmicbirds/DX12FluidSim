@@ -5,8 +5,6 @@
 #include "Window/Window.hpp"
 #include "Renderer/Renderer.hpp"
 #include "DebugLayer/DebugMacros.hpp"
-#include "Renderer/Scene.hpp"
-#include "FluidSimulation/FluidSimulation.hpp"
 #include "Window/UI.hpp"
 #include "Renderer/ConstantBuffers.hpp"
 
@@ -72,7 +70,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
         Renderer.InitializeBuffers(CmdList);
 
-        Scene Scene{Renderer, *Context.GetDevice()};
 
         UI ui{Context, Swapchain, Window.GetHwnd()};
         ui.OnHeightChanged.connect<&ConstantBuffers::SetBoundingBoxHeight>(constantBuffers);
@@ -80,7 +77,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ui.OnGravityChanged.connect<&ConstantBuffers::SetGravityData>(constantBuffers);
         ui.OnCollisionDampingChanged.connect<&ConstantBuffers::SetCollisionDampingData>(constantBuffers);
         ui.OnPauseToggled.connect<&ConstantBuffers::SetPauseToggle>(constantBuffers);
-        Scene.FlushToRenderer(CmdList);
 
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
