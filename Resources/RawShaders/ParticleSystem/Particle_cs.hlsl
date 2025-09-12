@@ -19,6 +19,7 @@ struct DebugData
 
 RWStructuredBuffer<Particle> gParticles : register(u0);
 RWStructuredBuffer<DebugData> DebugParticles : register(u1);
+RWTexture2D<float> gDensityTex : register(u2);
 
 cbuffer TimeBufferCompute : register(b0)
 {
@@ -77,8 +78,6 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     Particle p = gParticles[i];
     float SurfaceOffset = 0.001f;
     p.Density = CalculateDensity(i);
-    DebugParticles[i].DebugDensity = CalculateDensity(i);
-    DebugParticles[i].DebugParticleCount = ParticleCount;
     
     if (Pause == 1)
     {

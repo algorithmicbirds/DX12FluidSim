@@ -11,7 +11,7 @@ constexpr UINT Pause = 0;
 
 namespace ParticleInitialValues
 {
-constexpr float ParticleRadius = 0.02f;
+constexpr float ParticleRadius = 0.2f;
 // particle smoothing radius determine how much particlese usually it can influence so going with 4 particles
-constexpr float ParticleSmoothingRadius = 0.2f;
+constexpr float ParticleSmoothingRadius = 0.8f;
 } // namespace ParticleInitialValues

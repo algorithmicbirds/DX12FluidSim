@@ -110,6 +110,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
                 Swapchain.Resize();
                 Renderer.OnResize(Swapchain.GetAspectRatio());
                 Window.ClearResizeFlags();
+                Renderer.SetHeightAndWidth(Swapchain.GetHeight(), Swapchain.GetWidth());
                 SetViewPort(Swapchain, Renderer);
             }
 

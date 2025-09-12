@@ -48,5 +48,13 @@ D3D12_GPU_DESCRIPTOR_HANDLE CreateBufferDescriptor(
     UINT Stride,
     UINT DescriptorIndex = 0
 );
+D3D12_GPU_DESCRIPTOR_HANDLE CreateTextureDescriptor(
+    ID3D12Device14 &Device,
+    DescriptorType DescType,
+    ComPtr<ID3D12Resource2> Texture,
+    ComPtr<ID3D12DescriptorHeap> DescHeap,
+    DXGI_FORMAT Format,
+    UINT DescriptorIndex = 0
+);
 std::vector<char> ReadFile(const std::string &FilePath);
 } // namespace Utils

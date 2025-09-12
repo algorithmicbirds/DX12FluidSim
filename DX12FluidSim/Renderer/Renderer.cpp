@@ -36,7 +36,8 @@ Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device) : SwapchainRe
     DensityVisualizationGraphicsPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
     DensityVisualizationGraphicsPipeline->SetRootSignature(RootSignature);
     DensityVisualizationGraphicsPipeline->CreatePipeline(
-        SHADER_PATH "ParticleSystem/Particle_vs.cso", SHADER_PATH "ParticleSystem/VisualizeDensity_ps.cso"
+        SHADER_PATH "DensityVisualization/VisualizeDensity_vs.cso",
+        SHADER_PATH "DensityVisualization/VisualizeDensity_ps.cso"
     );
 }
 
@@ -47,7 +48,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
-    // RunParticlesGraphicsPipeline(CmdList);
+    //RunParticlesGraphicsPipeline(CmdList);
     RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
@@ -72,13 +73,18 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleUAVGPUHandle()
     );
-    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::DebugSRV_t1, ParticleComputePipeline->GetDebugUAVGPUHandle());
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::DebugUAV_t1, ParticleComputePipeline->GetDebugUAVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::DensityTexUAV_t2, ParticleComputePipeline->GetDensityTexUAVGPUHandle()
+    );
 
     UINT ThreadGroupSize = 256;
     UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
     CmdList->Dispatch(NumGroups, 1, 1);
 
-    ParticleComputePipeline->ReadDebugBuffer(CmdList);
+    //ParticleComputePipeline->ReadDebugBuffer(CmdList);
 }
 
 void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -103,23 +109,23 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
     DensityVisualizationGraphicsPipeline->BindRootAndPSO(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, TimerCB.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::ScreenCB_b4, ScreenCB.GPUAddress);
     CmdList->SetGraphicsRootDescriptorTable(
         GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleSRVGPUHandle()
     );
-
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
 
     CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    constexpr UINT ParticleVerts = 6;
-    CmdList->DrawInstanced(ParticleVerts * ParticleCount, 1, 0, 0);
+    constexpr UINT ParticleVerts = 3;
+    CmdList->DrawInstanced(ParticleVerts, 1, 0, 0);
 }
 
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     BoundingBoxPipeline->BindRootAndPSO(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, CameraCB.GPUAddress);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBox_b3, BoundingBoxCB.GPUAddress);
+    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBoxCB_b3, BoundingBoxCB.GPUAddress);
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
     constexpr UINT BoxVertices = 5;
@@ -144,8 +150,7 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     const float Pol6SmoothingRadiusPow8 = pow(ParticleInitialValues::ParticleSmoothingRadius, 8);
     PrecompParticleData.Poly6SmoothingRadiusSquared = pow(ParticleInitialValues::ParticleSmoothingRadius, 2);
     PrecompParticleData.Poly6KernelConst = 4.0f / (PI * Pol6SmoothingRadiusPow8);
-    printf("Poly6SmoothingRadiusPow2: %f\n", PrecompParticleData.Poly6SmoothingRadiusSquared);
-    printf("Poly6KernelConst: %f\n", PrecompParticleData.Poly6KernelConst);
+    PrecompParticleData.ParticleCount = ParticleCount;
 
     Utils::CreateUploadBuffer(
         DeviceRef,
@@ -161,6 +166,7 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     TimerCB.Initialize(DeviceRef);
     CameraCB.Initialize(DeviceRef);
     BoundingBoxCB.Initialize(DeviceRef);
+    ScreenCB.Initialize(DeviceRef);
     UpdateBoundingBoxData();
     UpdateSimParamsData();
 }
@@ -247,6 +253,12 @@ void Renderer::SetPauseToggle(UINT PauseToggle)
 {
     SimParamsCPU.Pause = PauseToggle;
     UpdateSimParamsData();
+}
+
+void Renderer::SetHeightAndWidth(float Height, float Width)
+{
+    ScreenConstCPU.ScreenSize = {Width, Height};
+    ScreenCB.Update(ScreenConstCPU);
 }
 
 void Renderer::UpdateSimParamsData() { SimParamsCB.Update(SimParamsCPU); }

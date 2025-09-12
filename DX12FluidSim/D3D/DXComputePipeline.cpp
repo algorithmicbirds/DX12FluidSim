@@ -10,7 +10,7 @@ DXComputePipeline::~DXComputePipeline() {}
 void DXComputePipeline::CreatePipeline(const std::string &CSFilePath)
 {
     std::vector<char> CSCode = Utils::ReadFile(CSFilePath);
-
+    CreateDensityTexture();
     CreateDescHeap();
     CreatePipelineState(CSCode);
 }
@@ -18,7 +18,7 @@ void DXComputePipeline::CreatePipeline(const std::string &CSFilePath)
 void DXComputePipeline::CreateDescHeap()
 {
     D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
-    HeapDesc.NumDescriptors = 3;
+    HeapDesc.NumDescriptors = 5;
     HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
@@ -52,6 +52,25 @@ void DXComputePipeline::CreateDescHeap()
         sizeof(DebugStructuredBuffer),
         2
     );
+
+  DensityTexUAVGPUHandle = Utils::CreateTextureDescriptor(
+        DeviceRef,
+        DescriptorType::UAV,
+        DensityTexture,
+        DescriptorHeap,
+        DXGI_FORMAT_R32_FLOAT,
+        3 
+    );
+
+    DensityTexSRVGPUHandle = Utils::CreateTextureDescriptor(
+        DeviceRef,
+        DescriptorType::SRV,
+        DensityTexture,
+        DescriptorHeap,
+        DXGI_FORMAT_R32_FLOAT,
+        4 
+    );
+
 }
 
 void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count)
@@ -113,18 +132,43 @@ void DXComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
 
     for (UINT i = 0; i < ParticleCount; ++i)
     {
-        printf(
-            "Particle %u: Density = %f, ParticleCount = %u\n",
-            i,
-            mappedData[i].DebugDensity,
-            mappedData[i].DebugParticleCount
-        );
+        std::cout << "Particle " << i << ": Density = " << mappedData[i].DebugDensity
+                  << ", ParticleCount = " << mappedData[i].DebugParticleCount << "\n";
     }
 
     D3D12_RANGE writtenRange{0, 0};
     GPUDebugResourcesData.ReadBackBuffer->Unmap(0, &writtenRange);
 }
 
+void DXComputePipeline::CreateDensityTexture()
+{
+    D3D12_RESOURCE_DESC TexDesc{};
+    TexDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    TexDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    TexDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    TexDesc.Width = 1920;
+    TexDesc.Height = 1080;
+    TexDesc.MipLevels = 1;
+    TexDesc.DepthOrArraySize = 1;
+    TexDesc.SampleDesc.Count = 1;
+    TexDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    
+    D3D12_HEAP_PROPERTIES heapProps{};
+    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    DX_VALIDATE(
+        DeviceRef.CreateCommittedResource(
+            &heapProps,
+            D3D12_HEAP_FLAG_NONE,
+            &TexDesc,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            nullptr,
+            IID_PPV_ARGS(&DensityTexture)
+        ),
+        DensityTexture
+    );
+}
 void DXComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData)
 {
     int particlesPerRow = (int)sqrt(ParticleCount);
@@ -138,7 +182,6 @@ void DXComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredB
     for (UINT i = 0; i < ParticleCount; ++i)
     {
         ParticleStructuredBuffer &p = particleData[i];
-        p.ParticleCount = ParticleCount;
         int row = i / particlesPerRow;
         int col = i % particlesPerRow;
 

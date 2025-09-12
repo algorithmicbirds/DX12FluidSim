@@ -45,10 +45,12 @@ struct PrecomputedParticleGPUData
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
-struct PrecomputedParticleConstants
+struct alignas(16) PrecomputedParticleConstants
 {
     float Poly6SmoothingRadiusSquared;
     float Poly6KernelConst;
+    UINT ParticleCount;
+    float Pad;
 };
 
 struct CameraConstant
@@ -91,6 +93,11 @@ struct DebugConstantGPUData
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
+struct ScreenConstantFrag {
+    DirectX::XMFLOAT2 ScreenSize;
+    UINT ParticleCount;
+};
+
 class Renderer
 {
 public:
@@ -110,6 +117,7 @@ public:
     void SetGravityData(float Gravity);
     void SetCollisionDampingData(float CollisionDamping);
     void SetPauseToggle(UINT PauseToggle);
+    void SetHeightAndWidth(float Height, float Width);
     inline DXGraphicsPipeline *GetMeshPipeline() { return MeshPipeline.get(); }
 
 private:
@@ -148,6 +156,10 @@ private:
     PrecomputedParticleGPUData ParticleBuffer;
     DebugConstants DebugConst;
 
+    ScreenConstantFrag ScreenConstCPU{
+        {1920, 1080},
+        ParticleCount
+    };
 
     BoundingBoxConstant BoundingBoxCPU{
         {-SimInitials::BoundingBoxWidth, -SimInitials::BoundingBoxHeight},
@@ -160,4 +172,5 @@ private:
     ConstantBuffer<CameraConstant> CameraCB;
     ConstantBuffer<BoundingBoxConstant> BoundingBoxCB;
     ConstantBuffer<SimParamsConstants> SimParamsCB;
+    ConstantBuffer<ScreenConstantFrag> ScreenCB;
 };

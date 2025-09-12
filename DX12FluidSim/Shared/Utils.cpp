@@ -149,6 +149,48 @@ D3D12_GPU_DESCRIPTOR_HANDLE CreateBufferDescriptor(
 
     return GPUHandle;
 }
+D3D12_GPU_DESCRIPTOR_HANDLE CreateTextureDescriptor(
+    ID3D12Device14 &Device,
+    DescriptorType DescType,
+    ComPtr<ID3D12Resource2> Texture,
+    ComPtr<ID3D12DescriptorHeap> DescHeap,
+    DXGI_FORMAT Format,
+    UINT DescriptorIndex
+)
+{
+    UINT HandleSize = Device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle = DescHeap->GetGPUDescriptorHandleForHeapStart();
+    GPUHandle.ptr += DescriptorIndex * HandleSize;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle = DescHeap->GetCPUDescriptorHandleForHeapStart();
+    CPUHandle.ptr += DescriptorIndex * HandleSize;
+
+    if (DescType == DescriptorType::UAV)
+    {
+        D3D12_UNORDERED_ACCESS_VIEW_DESC Desc{};
+        Desc.Format = Format;
+        Desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+        Desc.Texture2D.MipSlice = 0;
+        Desc.Texture2D.PlaneSlice = 0;
+
+        Device.CreateUnorderedAccessView(Texture.Get(), nullptr, &Desc, CPUHandle);
+    }
+    else if (DescType == DescriptorType::SRV)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC Desc{};
+        Desc.Format = Format;
+        Desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        Desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        Desc.Texture2D.MostDetailedMip = 0;
+        Desc.Texture2D.MipLevels = 1;
+        Desc.Texture2D.PlaneSlice = 0;
+        Desc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+        Device.CreateShaderResourceView(Texture.Get(), &Desc, CPUHandle);
+    }
+
+    return GPUHandle;
+}
 std::vector<char> ReadFile(const std::string &FilePath)
 {
     std::ifstream File{FilePath, std::ios::ate | std::ios::binary};

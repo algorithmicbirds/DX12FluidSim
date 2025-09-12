@@ -13,7 +13,6 @@ struct ParticleStructuredBuffer
     float Density = 0;
     float Pressure;
     float Mass = 1.0f;
-    UINT ParticleCount = 0;
 };
 
 struct ParticleGPUData
@@ -46,11 +45,14 @@ public:
     void SetRootSignature(ComPtr<ID3D12RootSignature> InRootSig) { RootSignature = InRootSig; }
     void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count);
     void ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
+    void CreateDensityTexture();
     void ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData);
     
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleSRVGPUHandle() const { return ParticleSRVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleUAVGPUHandle() const { return ParticleUAVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetDebugUAVGPUHandle() const { return DebugUAVGPUHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetDensityTexUAVGPUHandle() const { return DensityTexUAVGPUHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetDesnsityTexSRVGPUHandle() const { return DensityTexSRVGPUHandle; }
     ID3D12Resource2 *GetParticleBuffer() { return ParticleData.DefaultBuffer.Get(); }
     ID3D12DescriptorHeap *GetDescriptorHeap() { return DescriptorHeap.Get(); }
 
@@ -68,10 +70,13 @@ private:
 
     ComPtr<ID3D12RootSignature> RootSignature;
     ComPtr<ID3D12PipelineState> PipelineState;
+    ComPtr<ID3D12Resource2> DensityTexture;
 
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleUAVGPUHandle{};
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleSRVGPUHandle{};
     D3D12_GPU_DESCRIPTOR_HANDLE DebugUAVGPUHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE DensityTexUAVGPUHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE DensityTexSRVGPUHandle{};
 
     ParticleGPUData ParticleData;
     GPUDebugResources GPUDebugResourcesData;
