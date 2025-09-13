@@ -33,8 +33,8 @@ Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device, ConstantBuffe
     DensityVisualizationGraphicsPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
     DensityVisualizationGraphicsPipeline->SetRootSignature(RootSignature);
     DensityVisualizationGraphicsPipeline->CreatePipeline(
-        SHADER_PATH "DensityVisualization/VisualizeDensity_vs.cso",
-        SHADER_PATH "DensityVisualization/VisualizeDensity_ps.cso"
+        SHADER_PATH "ParticleSystem/Particle_vs.cso",
+        SHADER_PATH "ParticleSystem/VisualizeDensity_ps.cso"
     );
 }
 
@@ -45,8 +45,8 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
-    RunParticlesGraphicsPipeline(CmdList);
-    //RunDensityVisualizationGraphicsPipeline(CmdList);
+    //RunParticlesGraphicsPipeline(CmdList);
+    RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
 
@@ -115,18 +115,15 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
     CmdList->SetGraphicsRootDescriptorTable(
         GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleSRVGPUHandle()
     );
-    CmdList->SetGraphicsRootDescriptorTable(
-        GraphicsRootParams::DensityTexSRV_t1, ParticleComputePipeline->GetDesnsityTexSRVGPUHandle()
-    );
-  /*  CmdList->SetGraphicsRootDescriptorTable(
-        GraphicsRootParams::DebugUAV_u0, DebugGPUDescHandle
-    );*/
+    CmdList->SetGraphicsRootDescriptorTable(GraphicsRootParams::DebugUAV_u0, DebugBuffer.GetDebugGPUDescHandle());
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
 
     CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    constexpr UINT ParticleVerts = 3;
-    CmdList->DrawInstanced(ParticleVerts, 1, 0, 0);
+    constexpr UINT ParticleVerts = 6;
+    CmdList->DrawInstanced(ParticleVerts * ParticleCount, 1, 0, 0);
+
+    //DebugBuffer.ReadBackDebugBuffer(CmdList);
 }
 
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -166,7 +163,9 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
         ParticleBuffer.DefaultBuffer,
         ParticleBuffer.UploadBuffer
     );
-    ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress(); 
-
+    ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress();
+    
+    DebugBuffer.SetDescriptorHeap(ParticleComputePipeline->GetDecriptorHeapObj());
+    DebugBuffer.CreateDebugUAVDesc(DeviceRef);
     ConstantBuffersRef.InitializeBuffers(DeviceRef);
 }

@@ -8,8 +8,7 @@ constexpr UINT TimerCB_b2 = 2;
 constexpr UINT BoundingBoxCB_b3 = 3;
 constexpr UINT ParticleSRV_t0 = 4;
 constexpr UINT ScreenCB_b4 = 5;
-constexpr UINT DensityTexSRV_t1 = 6;
-//constexpr UINT DebugUAV_u0 = 7;
+constexpr UINT DebugUAV_u0 = 6;
 } // namespace GraphicsRootParams
 
 namespace ComputeRootParams

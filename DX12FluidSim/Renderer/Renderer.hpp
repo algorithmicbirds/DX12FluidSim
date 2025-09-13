@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include "Shared/SimData.hpp"
 #include "Renderer/ConstantBuffers.hpp"
+#include "Renderer/StupidDebugBuffer.hpp"
 
 class DXGraphicsPipeline;
 class DXSwapchain;
@@ -27,12 +28,10 @@ struct PrecomputedParticleConstants
     UINT ParticleCount;
 };
 
-
 struct DebugConstants
 {
     float Density;
 };
-
 
 class Renderer
 {
@@ -48,13 +47,11 @@ public:
     void SetViewport(D3D12_VIEWPORT NewVP) { Viewport = NewVP; }
 
 private:
-
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
-
 
 private:
     DXSwapchain &SwapchainRef;
@@ -68,9 +65,9 @@ private:
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
 
-    UINT ParticleCount = 1024;
+    UINT ParticleCount = SimInitials::ParticleCount;
     PrecomputedParticleGPUData ParticleBuffer;
     DebugConstants DebugConst;
 
-
+    StupidDebugBuffer DebugBuffer;
 };

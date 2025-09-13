@@ -76,7 +76,7 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     uint i = DTid.x;
     Particle particle = gParticles[i];
     particle.Density = CalculateDensity(i);
-    DebugParticles[i].DebugDensity = CalculateDensity(i);
+    DebugParticles[i].DebugDensity = particle.Density;
     DebugParticles[i].DebugParticleCount = ParticleCount;
     
     if (Pause == 1)

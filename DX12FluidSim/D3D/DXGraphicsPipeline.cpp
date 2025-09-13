@@ -110,7 +110,7 @@ D3D12_BLEND_DESC DXGraphicsPipeline::InitBlendDesc()
 D3D12_DEPTH_STENCIL_DESC DXGraphicsPipeline::InitDepthStencilDesc()
 {
     D3D12_DEPTH_STENCIL_DESC DepthStencilDesc{};
-    DepthStencilDesc.DepthEnable = TRUE;
+    DepthStencilDesc.DepthEnable = FALSE;
     DepthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     DepthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     DepthStencilDesc.StencilEnable = FALSE;

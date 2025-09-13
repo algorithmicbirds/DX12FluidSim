@@ -102,7 +102,7 @@ private:
     Camera Camera;
     ScreenConstantFrag ScreenConstCPU{
         {1920, 1080},
-        1024
+        SimInitials::ParticleCount
     };
 
     BoundingBoxConstant BoundingBoxCPU{

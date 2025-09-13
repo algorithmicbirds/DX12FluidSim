@@ -18,7 +18,7 @@ void DXComputePipeline::CreatePipeline(const std::string &CSFilePath)
 void DXComputePipeline::CreateDescHeap()
 {
     D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
-    HeapDesc.NumDescriptors = 5;
+    HeapDesc.NumDescriptors = 6;
     HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 

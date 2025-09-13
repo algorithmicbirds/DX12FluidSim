@@ -59,7 +59,7 @@ public:
     D3D12_GPU_DESCRIPTOR_HANDLE GetDesnsityTexSRVGPUHandle() const { return DensityTexSRVGPUHandle; }
     ID3D12Resource2 *GetParticleBuffer() { return ParticleData.DefaultBuffer.Get(); }
     ID3D12DescriptorHeap *GetDescriptorHeap() { return DescriptorHeap.Get(); }
-
+    ComPtr<ID3D12DescriptorHeap> GetDecriptorHeapObj() { return DescriptorHeap; }
 
 private:
     void CreateDescHeap();

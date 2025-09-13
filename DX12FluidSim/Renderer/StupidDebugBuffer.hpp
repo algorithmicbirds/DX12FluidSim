@@ -18,7 +18,9 @@ class StupidDebugBuffer
 {
 public:
     void ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
-    void CreateDebugUAVAndDesc(ID3D12Device14 &Device);
+    void CreateDebugUAVDesc(ID3D12Device14 &Device);
+    D3D12_GPU_DESCRIPTOR_HANDLE GetDebugGPUDescHandle() const { return DebugGPUDescHandle; }
+    void SetDescriptorHeap(ComPtr<ID3D12DescriptorHeap> DescHeap) { DebugDescHeap = DescHeap; }
 
 private:
     PixelGPUDebugResources GPUDebug;

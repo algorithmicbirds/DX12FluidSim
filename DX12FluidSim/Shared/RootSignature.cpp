@@ -30,13 +30,9 @@ ComPtr<ID3D12RootSignature> CreateGraphicsRootSig(ID3D12Device14 &Device)
 {
     D3D12_DESCRIPTOR_RANGE1 ParticlesSRVRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0);
     D3D12_DESCRIPTOR_RANGE1 DensitySRVRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1);
-    D3D12_DESCRIPTOR_RANGE1 DebugRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 2);
+    D3D12_DESCRIPTOR_RANGE1 DebugRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0);
 
-    D3D12_ROOT_DESCRIPTOR_TABLE1 DebugTable{};
-    DebugTable.NumDescriptorRanges = 1;
-    DebugTable.pDescriptorRanges = &DebugRange;
-
-    D3D12_ROOT_PARAMETER1 RootParam[8]{};
+    D3D12_ROOT_PARAMETER1 RootParam[7] = {};
 
     RootParam[GraphicsRootParams::CameraCB_b0] = CreateCBV(0, D3D12_SHADER_VISIBILITY_VERTEX);
     RootParam[GraphicsRootParams::ModelCB_b1] = CreateCBV(1, D3D12_SHADER_VISIBILITY_VERTEX);
@@ -44,7 +40,7 @@ ComPtr<ID3D12RootSignature> CreateGraphicsRootSig(ID3D12Device14 &Device)
     RootParam[GraphicsRootParams::BoundingBoxCB_b3] = CreateCBV(3, D3D12_SHADER_VISIBILITY_VERTEX);
     RootParam[GraphicsRootParams::ScreenCB_b4] = CreateCBV(4, D3D12_SHADER_VISIBILITY_PIXEL);
     RootParam[GraphicsRootParams::ParticleSRV_t0] = CreateTableParam(ParticlesSRVRange);
-    //RootParam[GraphicsRootParams::DebugUAV_u0] = CreateTableParam(DebugRange);
+    RootParam[GraphicsRootParams::DebugUAV_u0] = CreateTableParam(DebugRange);
 
     ComPtr<ID3D12RootSignature> RootSignature;
     RootSignature = CreateRootSig(
