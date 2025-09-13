@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <iostream>
+#include "Shared/RendererConfig.hpp"
 
 #include "DebugLayer/DebugMacros.hpp"
 
@@ -34,21 +35,20 @@ bool DXSwapchain::Init()
 
     ComPtr<IDXGISwapChain1> SwapChain1;
 
-    DX_VALIDATE(DXGIFactory->CreateSwapChainForHwnd(
-        ContextRef.GetCommandQueue(), HwndRef, &SwapchainDesc, &FSwapChainDesc, nullptr, SwapChain1.GetAddressOf()
-    ), SwapChain1);
+    DX_VALIDATE(
+        DXGIFactory->CreateSwapChainForHwnd(
+            ContextRef.GetCommandQueue(), HwndRef, &SwapchainDesc, &FSwapChainDesc, nullptr, SwapChain1.GetAddressOf()
+        ),
+        SwapChain1
+    );
 
     DX_VALIDATE(SwapChain1->QueryInterface(IID_PPV_ARGS(&SwapChain3)), SwapChain3);
-
 
     InitializeViews();
     return true;
 }
 
-void DXSwapchain::Present()
-{
-    SwapChain3->Present(0, 0);
-}
+void DXSwapchain::Present() { SwapChain3->Present(0, 0); }
 
 void DXSwapchain::ShutDown()
 {
@@ -73,7 +73,8 @@ void DXSwapchain::ReleaseBuffers()
     }
 }
 
-void DXSwapchain::UpdateViewportAndScissor() {
+void DXSwapchain::UpdateViewportAndScissor()
+{
     Viewport = {0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height), 0.0f, 1.0f};
     ScissorRect = {0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height)};
 }
@@ -126,8 +127,64 @@ void DXSwapchain::CreateRTVAndDescHeap()
         RTV.Texture2D.MipSlice = 0;
         RTV.Texture2D.PlaneSlice = 0;
 
-       ContextRef.GetDevice()->CreateRenderTargetView(buffer, &RTV, RTVHandles.at(i));
+        ContextRef.GetDevice()->CreateRenderTargetView(buffer, &RTV, RTVHandles.at(i));
     }
+}
+
+void DXSwapchain::CreateMSAARTVAndDescHeap()
+{
+    D3D12_DESCRIPTOR_HEAP_DESC MSAAHeapDesc{};
+    MSAAHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    MSAAHeapDesc.NumDescriptors = 1;
+    MSAAHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    MSAAHeapDesc.NodeMask = 0;
+
+    DX_VALIDATE(
+        ContextRef.GetDevice()->CreateDescriptorHeap(&MSAAHeapDesc, IID_PPV_ARGS(&MSAARTVDescHeap)), MSAARTVDescHeap
+    );
+
+    MSAARTVHandle = MSAARTVDescHeap->GetCPUDescriptorHandleForHeapStart();
+
+    // texture desc
+    D3D12_RESOURCE_DESC MSAARTDesc{};
+    MSAARTDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    MSAARTDesc.Height = Height;
+    MSAARTDesc.Width = Width;
+    MSAARTDesc.DepthOrArraySize = 1;
+    MSAARTDesc.MipLevels = 1;
+    MSAARTDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    MSAARTDesc.SampleDesc.Count = RendererConfig::MSAACount;
+    MSAARTDesc.SampleDesc.Quality = 0;
+    MSAARTDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    MSAARTDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+    D3D12_CLEAR_VALUE ClearValue{};
+    ClearValue.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    ClearValue.Color[0] = 0.0f;
+    ClearValue.Color[1] = 0.0f;
+    ClearValue.Color[2] = 0.0f;
+    ClearValue.Color[3] = 1.0f;
+
+    D3D12_HEAP_PROPERTIES MSAAHeapProps{};
+    MSAAHeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    DX_VALIDATE(
+        ContextRef.GetDevice()->CreateCommittedResource(
+            &MSAAHeapProps,
+            D3D12_HEAP_FLAG_NONE,
+            &MSAARTDesc,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            &ClearValue,
+            IID_PPV_ARGS(&MSAARTV)
+        ),
+        MSAARTV
+    );
+
+    D3D12_RENDER_TARGET_VIEW_DESC MSAARTVDesc{};
+    MSAARTVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    MSAARTVDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+
+    ContextRef.GetDevice()->CreateRenderTargetView(MSAARTV.Get(), &MSAARTVDesc, MSAARTVHandle);
 }
 
 void DXSwapchain::ReleaseRTVHeaps()
@@ -136,7 +193,14 @@ void DXSwapchain::ReleaseRTVHeaps()
     RTVHandles.clear();
 }
 
-void DXSwapchain::CreateDSV() {
+void DXSwapchain::ReleaseMSAARTVHeap()
+{
+    MSAARTV.Reset();
+    MSAARTVDescHeap.Reset();
+}
+
+void DXSwapchain::CreateDSV()
+{
     D3D12_DESCRIPTOR_HEAP_DESC DSVHeapDesc{};
     DSVHeapDesc.NumDescriptors = 1;
     DSVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
@@ -144,6 +208,50 @@ void DXSwapchain::CreateDSV() {
     DX_VALIDATE(ContextRef.GetDevice()->CreateDescriptorHeap(&DSVHeapDesc, IID_PPV_ARGS(&DSVHeap)), DSVHeap);
 
     DSVHandle = DSVHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+void DXSwapchain::CreateMSAADSVAndBuffer()
+{
+    D3D12_RESOURCE_DESC MSAADepthDesc{};
+    MSAADepthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    MSAADepthDesc.Width = Width;
+    MSAADepthDesc.Height = Height;
+    MSAADepthDesc.DepthOrArraySize = 1;
+    MSAADepthDesc.MipLevels = 1;
+    MSAADepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    MSAADepthDesc.SampleDesc.Count = RendererConfig::MSAACount;
+    MSAADepthDesc.SampleDesc.Quality = 0;
+    MSAADepthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    MSAADepthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+    D3D12_CLEAR_VALUE ClearValue{};
+    ClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+    ClearValue.DepthStencil.Depth = 1.0f;
+    ClearValue.DepthStencil.Stencil = 0;
+
+    D3D12_HEAP_PROPERTIES MSAAHeapProps{};
+    MSAAHeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    DX_VALIDATE(
+        ContextRef.GetDevice()->CreateCommittedResource(
+            &MSAAHeapProps,
+            D3D12_HEAP_FLAG_NONE,
+            &MSAADepthDesc,
+            D3D12_RESOURCE_STATE_DEPTH_WRITE,
+            &ClearValue,
+            IID_PPV_ARGS(&MSAADepthStencilBuffer)
+        ),
+        MSAADepthStencilBuffer
+    );
+
+    D3D12_DESCRIPTOR_HEAP_DESC DsvHeapDesc{};
+    DsvHeapDesc.NumDescriptors = 1;
+    DsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    DsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    DX_VALIDATE(ContextRef.GetDevice()->CreateDescriptorHeap(&DsvHeapDesc, IID_PPV_ARGS(&MSAADSVHeap)), MSAADSVHeap);
+
+    MSAADSVHandle = MSAADSVHeap->GetCPUDescriptorHandleForHeapStart();
+    ContextRef.GetDevice()->CreateDepthStencilView(MSAADepthStencilBuffer.Get(), nullptr, MSAADSVHandle);
 }
 
 void DXSwapchain::CreateDepthStencilBuffer()
@@ -155,7 +263,7 @@ void DXSwapchain::CreateDepthStencilBuffer()
     DepthDesc.DepthOrArraySize = 1;
     DepthDesc.MipLevels = 1;
     DepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
-    DepthDesc.SampleDesc.Count = 1;
+    DepthDesc.SampleDesc.Count = RendererConfig::MSAACount;
     DepthDesc.SampleDesc.Quality = 0;
     DepthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
     DepthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -187,17 +295,50 @@ void DXSwapchain::CreateDepthStencilBuffer()
     ContextRef.GetDevice()->CreateDepthStencilView(DepthStencilBuffer.Get(), nullptr, DSVHandle);
 }
 
-void DXSwapchain::ReleaseDSV() {
+void DXSwapchain::ReleaseDSV()
+{
     DepthStencilBuffer.Reset();
     DSVHeap.Reset();
+}
+
+void DXSwapchain::MSAAReleaseDSV()
+{
+    MSAADepthStencilBuffer.Reset();
+    MSAADSVHeap.Reset();
 }
 
 void DXSwapchain::InitializeViews()
 {
     ReleaseDSV();
     ReleaseRTVHeaps();
+    ReleaseMSAARTVHeap();
     GetBuffers();
     CreateRTVAndDescHeap();
+    CreateMSAARTVAndDescHeap();
     CreateDSV();
     CreateDepthStencilBuffer();
+    CreateMSAADSVAndBuffer();
+}
+
+void DXSwapchain::ResolveToBackBuffers(ID3D12GraphicsCommandList7 *CmdList)
+{
+    // transtion msaa and current back buffer to resolve state
+    Utils::TransitionResoure(
+        CmdList, MSAARTV.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE
+    );
+
+    Utils::TransitionResoure(
+        CmdList, GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RESOLVE_DEST
+    );
+
+    CmdList->ResolveSubresource(GetCurrentBackBuffer(), 0, MSAARTV.Get(), 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+
+    // transition backbuffer for ui rendering
+    Utils::TransitionResoure(
+        CmdList, GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET
+    );
+
+    Utils::TransitionResoure(
+        CmdList, MSAARTV.Get(), D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET
+    );
 }

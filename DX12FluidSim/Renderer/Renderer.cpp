@@ -33,8 +33,8 @@ Renderer::Renderer(DXSwapchain &Swapchain, ID3D12Device14 &Device, ConstantBuffe
     DensityVisualizationGraphicsPipeline->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
     DensityVisualizationGraphicsPipeline->SetRootSignature(RootSignature);
     DensityVisualizationGraphicsPipeline->CreatePipeline(
-        SHADER_PATH "ParticleSystem/Particle_vs.cso",
-        SHADER_PATH "ParticleSystem/VisualizeDensity_ps.cso"
+        SHADER_PATH "DensityVisualization/VisualizeDensity_vs.cso",
+        SHADER_PATH "DensityVisualization/VisualizeDensity_ps.cso"
     );
 }
 
@@ -53,9 +53,10 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
 void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
 {
     float ClearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
-    CmdList->ClearRenderTargetView(SwapchainRef.GetCurrentRTVHandle(), ClearColor, 0, nullptr);
-    CmdList->OMSetRenderTargets(1, &SwapchainRef.GetCurrentRTVHandle(), FALSE, &SwapchainRef.GetCurrentDSVHandle());
-    CmdList->ClearDepthStencilView(SwapchainRef.GetCurrentDSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+    CmdList->ClearRenderTargetView(SwapchainRef.GetMSAARTVHandle(), ClearColor, 0, nullptr);
+    CmdList->OMSetRenderTargets(1, &SwapchainRef.GetMSAARTVHandle(), FALSE, &SwapchainRef.GetMSAADSVHandle());
+    CmdList->ClearDepthStencilView(SwapchainRef.GetMSAADSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
 
 void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)

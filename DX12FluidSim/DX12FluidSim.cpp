@@ -62,14 +62,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         Window Window;
         DXSwapchain Swapchain{Context, Window.GetHwnd()};
 
-        
         ConstantBuffers constantBuffers;
         Renderer Renderer{Swapchain, *Context.GetDevice(), constantBuffers};
         Renderer.SetViewport(Swapchain.GetViewport());
         ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList();
 
         Renderer.InitializeBuffers(CmdList);
-
 
         UI ui{Context, Swapchain, Window.GetHwnd()};
         ui.OnHeightChanged.connect<&ConstantBuffers::SetBoundingBoxHeight>(constantBuffers);
@@ -101,7 +99,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             }
             Window.ResetKeyBoardState();
 
-
             if (Window.ShouldResize())
             {
                 Context.Flush(Swapchain.GetFrameCount());
@@ -115,11 +112,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             float DeltaTime = Window.GetDeltaTimeSeconds();
 
             CmdList = Context.InitCmdList();
-            Swapchain.TransitionCurrentToRT(CmdList);
+
             Renderer.RenderFrame(CmdList, DeltaTime);
-
+            Swapchain.ResolveToBackBuffers(CmdList);
+            /*
+            render frame clears msaa targets and Swapchain::ResolveBackBuffers just resolves msaa targets into
+            current backbuffers so to render imgui's ui we have to clear current backbuffers to avoid samplecount
+            mismatch and also it doesnt render ui without it 
+            */
+            CmdList->OMSetRenderTargets(1, &Swapchain.GetCurrentRTVHandle(), FALSE, nullptr);
             ui.RenderUI(CmdList);
-
             Swapchain.TransitionRTToPresent(CmdList);
             Context.DispatchCmdList();
             Swapchain.Present();

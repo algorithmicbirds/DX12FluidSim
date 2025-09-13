@@ -3,6 +3,7 @@
 #include <fstream>
 #include "DebugLayer/DebugMacros.hpp"
 #include "Shared/Utils.hpp"
+#include "Shared/RendererConfig.hpp"
 
 DXGraphicsPipeline::DXGraphicsPipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
 
@@ -41,7 +42,7 @@ void DXGraphicsPipeline::CreatePipelineState(std::vector<char> &VertexShaderCode
     GraphicsPSODesc.DepthStencilState = InitDepthStencilDesc();
 
     GraphicsPSODesc.SampleMask = 0xFFFFFFFF;
-    GraphicsPSODesc.SampleDesc.Count = 1;
+    GraphicsPSODesc.SampleDesc.Count = RendererConfig::MSAACount;
     GraphicsPSODesc.SampleDesc.Quality = 0;
 
     GraphicsPSODesc.NumRenderTargets = 1;
@@ -67,7 +68,7 @@ D3D12_RASTERIZER_DESC DXGraphicsPipeline::InitRasterizerDesc()
     RasterizerDesc.DepthBiasClamp = 0.0f;
     RasterizerDesc.SlopeScaledDepthBias = 0.0f;
     RasterizerDesc.DepthClipEnable = TRUE;
-    RasterizerDesc.MultisampleEnable = FALSE;
+    RasterizerDesc.MultisampleEnable = TRUE;
     RasterizerDesc.AntialiasedLineEnable = FALSE;
     RasterizerDesc.ForcedSampleCount = 0;
     return RasterizerDesc;

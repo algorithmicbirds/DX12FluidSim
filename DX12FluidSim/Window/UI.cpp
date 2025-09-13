@@ -40,6 +40,8 @@ void UI::InitializeImGUI()
     Init_Info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     Init_Info.SrvDescriptorHeap = ImguiHeap.Get();
     Init_Info.CommandQueue = ContextRef.GetCommandQueue();
+    Init_Info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    Init_Info.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
     Init_Info.LegacySingleSrvCpuDescriptor.ptr = CpuHandle.ptr;
     Init_Info.LegacySingleSrvGpuDescriptor.ptr = GpuHandle.ptr;

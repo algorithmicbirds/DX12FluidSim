@@ -60,6 +60,11 @@ public:
         );
     }
 
+    void ResolveToBackBuffers(ID3D12GraphicsCommandList7* CmdList);
+    D3D12_CPU_DESCRIPTOR_HANDLE &GetMSAARTVHandle() { return MSAARTVHandle; }
+    D3D12_CPU_DESCRIPTOR_HANDLE &GetMSAADSVHandle() { return MSAADSVHandle; }
+    ID3D12Resource2 *GetMSAARTVResource() { return MSAARTV.Get(); }
+
 private:
     bool Init();
     void ShutDown();
@@ -68,9 +73,13 @@ private:
     void UpdateViewportAndScissor();
     void CreateRTVAndDescHeap();
     void ReleaseRTVHeaps();
+    void ReleaseMSAARTVHeap();
     void CreateDSV();
+    void CreateMSAADSVAndBuffer();
     void CreateDepthStencilBuffer();
+    void CreateMSAARTVAndDescHeap();
     void ReleaseDSV();
+    void MSAAReleaseDSV();
     void InitializeViews();
 
 private:
@@ -80,10 +89,16 @@ private:
     ComPtr<IDXGIFactory7> DXGIFactory;
     ComPtr<ID3D12Resource2> DepthBuffer;
     ComPtr<ID3D12DescriptorHeap> RTVDescHeap;
+    ComPtr<ID3D12DescriptorHeap> MSAARTVDescHeap;
     ComPtr<ID3D12Resource2> Buffers[FrameCount];
     ComPtr<ID3D12Resource1> DepthStencilBuffer;
+    ComPtr<ID3D12Resource1> MSAADepthStencilBuffer;
+    ComPtr<ID3D12Resource2> MSAARTV;
     ComPtr<ID3D12DescriptorHeap> DSVHeap;
+    ComPtr<ID3D12DescriptorHeap> MSAADSVHeap;
     D3D12_CPU_DESCRIPTOR_HANDLE DSVHandle;
+    D3D12_CPU_DESCRIPTOR_HANDLE MSAARTVHandle;
+    D3D12_CPU_DESCRIPTOR_HANDLE MSAADSVHandle;
 
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> RTVHandles;
     HWND HwndRef;

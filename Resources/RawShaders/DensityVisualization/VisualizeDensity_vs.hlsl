@@ -1,4 +1,4 @@
-#include "Particle_cs.hlsl"
+#include "../ParticleSystem/Particle_cs.hlsl"
 
 cbuffer CameraBuffer : register(b0)
 {
@@ -30,14 +30,14 @@ VSOutput VSMain(uint vertexID : SV_VertexID)
     uint cornerID = vertexID % 6;
 
     Particle p = gParticlesVS[particleID];
-    float particleVert = p.ParticleRadius;
+    float particleVert = p.ParticleSmoothingRadius;
     
     float3 quadOffsets[4] =
     {
-        float3(-particleVert, particleVert, 0),
-        float3(particleVert, particleVert, 0),
-        float3(-particleVert, -particleVert, 0),
-        float3(particleVert, -particleVert, 0)
+        float3(-particleVert, particleVert, 0), 
+        float3(particleVert, particleVert, 0), 
+        float3(-particleVert, -particleVert, 0), 
+        float3(particleVert, -particleVert, 0) 
     };
 
     uint mapping[6] = { 0, 1, 2, 2, 1, 3 };
