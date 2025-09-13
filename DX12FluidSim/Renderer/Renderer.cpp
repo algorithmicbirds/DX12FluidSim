@@ -45,7 +45,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
-    //RunParticlesGraphicsPipeline(CmdList);
+    RunParticlesGraphicsPipeline(CmdList);
     RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
@@ -64,9 +64,8 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
     ParticleComputePipeline->BindRootAndPSO(CmdList);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, ConstantBuffersRef.GetTimerGPUVirtualAddress());
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::SimParamsCB_b2, ConstantBuffersRef.GetSimParamsGPUVirtualAddress());
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ComputeSimParamsCB_b2, ConstantBuffersRef.GetComputeSimParamsGPUVirtualAddress());
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ScreenCB_b4, ConstantBuffersRef.GetScreenParamsGPUVirtualAddress());
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
@@ -89,8 +88,15 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleGraphicsPipeline->BindRootAndPSO(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress());
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress()
+    );
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::TimerCB_b2, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress()
+    );
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::GraphicsSimParams_b4, ConstantBuffersRef.GetGraphicsSimParamsGPUVirtualAddress()
+    );
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
@@ -108,9 +114,15 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     DensityVisualizationGraphicsPipeline->BindRootAndPSO(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress());
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::TimerCB_b2, ConstantBuffersRef.GetTimerGPUVirtualAddress());
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::ScreenCB_b4, ConstantBuffersRef.GetScreenParamsGPUVirtualAddress());
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress()
+    );
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::TimerCB_b2, ConstantBuffersRef.GetTimerGPUVirtualAddress()
+    );
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::GraphicsSimParams_b4, ConstantBuffersRef.GetGraphicsSimParamsGPUVirtualAddress()
+    );
     ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(_countof(Heaps), Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
@@ -124,7 +136,7 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
     constexpr UINT ParticleVerts = 6;
     CmdList->DrawInstanced(ParticleVerts * ParticleCount, 1, 0, 0);
 
-    //DebugBuffer.ReadBackDebugBuffer(CmdList);
+    // DebugBuffer.ReadBackDebugBuffer(CmdList);
 }
 
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)

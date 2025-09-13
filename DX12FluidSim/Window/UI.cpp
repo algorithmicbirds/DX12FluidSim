@@ -79,9 +79,21 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     ImGui::Begin("DX12FluidSim", nullptr, ImGuiWindowFlags_MenuBar);
     static float halfWidth = SimInitials::BoundingBoxWidth;
     static float halfHeight = SimInitials::BoundingBoxHeight;
-    static float gravity = SimInitials::Gravity; 
+    static float gravity = SimInitials::Gravity;
     static float collisionDamping = SimInitials::CollisionDamping;
     static UINT pause = SimInitials::Pause;
+    static ImVec4 ParticleBaseColor = {
+        SimInitials::PariticleBaseColor.x,
+        SimInitials::PariticleBaseColor.y,
+        SimInitials::PariticleBaseColor.z,
+        SimInitials::PariticleBaseColor.w
+    };
+    static ImVec4 ParticleGlowColor = {
+        SimInitials::PariticleGlowColor.x,
+        SimInitials::PariticleGlowColor.y,
+        SimInitials::PariticleGlowColor.z,
+        SimInitials::PariticleGlowColor.w
+    };
 
     if (ImGui::SliderFloat("Width", &halfWidth, 0.5f, 3.5f))
     {
@@ -102,8 +114,22 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     }
     if (ImGui::Button(pause ? "Pause" : "Play"))
     {
-        pause ^= 1;             
-        OnPauseToggled.fire(pause); 
+        pause ^= 1;
+        OnPauseToggled.fire(pause);
+    }
+    if (ImGui::ColorEdit4("Particle Base Color", (float *)&ParticleBaseColor))
+    {
+        DirectX::XMFLOAT4 UpdatedColor(
+            ParticleBaseColor.x, ParticleBaseColor.y, ParticleBaseColor.z, ParticleBaseColor.w
+        );
+        OnParticleBaseColorChanged.fire(UpdatedColor);
+    }
+    if (ImGui::ColorEdit4("Particle Glow Color", (float *)&ParticleGlowColor))
+    {
+        DirectX::XMFLOAT4 UpdatedColor(
+            ParticleGlowColor.x, ParticleGlowColor.y, ParticleGlowColor.z, ParticleGlowColor.w
+        );
+        OnParticleGlowColorChanged.fire(UpdatedColor);
     }
     ImGui::End();
 

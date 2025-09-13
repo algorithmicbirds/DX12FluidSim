@@ -20,27 +20,34 @@ void ConstantBuffers::SetBoundingBoxWidth(float Width)
 
 void ConstantBuffers::SetGravityData(float Gravity)
 {
-    SimParamsCPU.Gravity = Gravity;
-    UpdateSimParamsData();
+    ComputeSimParamsCPU.Gravity = Gravity;
+    UpdateComputeSimParamsData();
 }
 
 void ConstantBuffers::SetCollisionDampingData(float CollisionDamping)
 {
-    SimParamsCPU.Damping = CollisionDamping;
-    UpdateSimParamsData();
+    ComputeSimParamsCPU.Damping = CollisionDamping;
+    UpdateComputeSimParamsData();
 }
 
 void ConstantBuffers::SetPauseToggle(UINT PauseToggle)
 {
-    SimParamsCPU.Pause = PauseToggle;
-    UpdateSimParamsData();
+    ComputeSimParamsCPU.Pause = PauseToggle;
+    UpdateComputeSimParamsData();
 }
 
-void ConstantBuffers::SetHeightAndWidth(float Height, float Width)
-{
-    ScreenConstCPU.ScreenSize = {Width, Height};
-    ScreenCB.Update(ScreenConstCPU);
+void ConstantBuffers::SetUpdatedBaseColor(DirectX::XMFLOAT4 Color) 
+{ 
+    GraphicsSimParamsCPU.BaseColor = {Color.x, Color.y, Color.z, Color.w};
+    GraphicsSimParamsCB.Update(GraphicsSimParamsCPU);
 }
+
+void ConstantBuffers::SetUpdatedGlowColor(DirectX::XMFLOAT4 Color)
+{
+    GraphicsSimParamsCPU.GlowColor = {Color.x, Color.y, Color.z, Color.w};
+    GraphicsSimParamsCB.Update(GraphicsSimParamsCPU);
+}
+
 
 void ConstantBuffers::UpdateCameraBuffer()
 {
@@ -62,17 +69,17 @@ void ConstantBuffers::InitializeBuffers(ID3D12Device14 &Device)
     Camera.SetTarget({0.0f, 0.0f, 0.0f});
     //Camera.SetLens(DirectX::XM_PIDIV4, AspectRatio, 0.1f, 1000.0f);
 
-    SimParamsCB.Initialize(Device);
+    ComputeSimParamsCB.Initialize(Device);
+    GraphicsSimParamsCB.Initialize(Device);
     TimerCB.Initialize(Device);
     CameraCB.Initialize(Device);
     BoundingBoxCB.Initialize(Device);
-    ScreenCB.Initialize(Device);
-    ScreenCB.Update(ScreenConstCPU);
+    GraphicsSimParamsCB.Update(GraphicsSimParamsCPU);
     UpdateBoundingBoxData();
-    UpdateSimParamsData();
+    UpdateComputeSimParamsData();
 }
 
-void ConstantBuffers::UpdateSimParamsData() { SimParamsCB.Update(SimParamsCPU); }
+void ConstantBuffers::UpdateComputeSimParamsData() { ComputeSimParamsCB.Update(ComputeSimParamsCPU); }
 
 void ConstantBuffers::UpdateBoundingBoxData() { BoundingBoxCB.Update(BoundingBoxCPU); }
 

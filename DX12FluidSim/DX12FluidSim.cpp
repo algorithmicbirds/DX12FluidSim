@@ -75,6 +75,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ui.OnGravityChanged.connect<&ConstantBuffers::SetGravityData>(constantBuffers);
         ui.OnCollisionDampingChanged.connect<&ConstantBuffers::SetCollisionDampingData>(constantBuffers);
         ui.OnPauseToggled.connect<&ConstantBuffers::SetPauseToggle>(constantBuffers);
+        ui.OnParticleBaseColorChanged.connect<&ConstantBuffers::SetUpdatedBaseColor>(constantBuffers);
+        ui.OnParticleGlowColorChanged.connect<&ConstantBuffers::SetUpdatedGlowColor>(constantBuffers);
 
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
@@ -105,7 +107,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
                 Swapchain.Resize();
                 constantBuffers.OnResize(Swapchain.GetAspectRatio());
                 Window.ClearResizeFlags();
-                constantBuffers.SetHeightAndWidth(Swapchain.GetHeight(), Swapchain.GetWidth());
                 SetViewPort(Swapchain, Renderer);
             }
 

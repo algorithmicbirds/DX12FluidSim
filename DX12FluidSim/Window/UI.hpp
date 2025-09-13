@@ -18,6 +18,8 @@ public:
     Nano::Signal<void(float)> OnGravityChanged;
     Nano::Signal<void(float)> OnCollisionDampingChanged;
     Nano::Signal<void(UINT)> OnPauseToggled;
+    Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleBaseColorChanged;
+    Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleGlowColorChanged;
 
 private:
     void InitializeImGUI();

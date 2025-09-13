@@ -1,5 +1,7 @@
 #pragma once
 
+#include <DirectXMath.h>
+
 namespace SimInitials
 {
 constexpr float BoundingBoxHeight = 2.0f;
@@ -8,11 +10,13 @@ constexpr float CollisionDamping = 1.0f;
 constexpr float Gravity = 0.9f;
 constexpr UINT Pause = 0;
 constexpr UINT ParticleCount = 256;
+constexpr DirectX::XMFLOAT4 PariticleBaseColor(0.0f, 0.1f, 1.0f, 1.0f);
+constexpr DirectX::XMFLOAT4 PariticleGlowColor(0.0f, 0.1f, 1.0f, 1.0f);
 } // namespace SimInitials
 
 namespace ParticleInitialValues
 {
 constexpr float ParticleRadius = 0.05f;
 // particle smoothing radius determine how much particlese usually it can influence so going with 4 particles
-constexpr float ParticleSmoothingRadius = 0.15f;
+constexpr float ParticleSmoothingRadius = 0.2f;
 } // namespace ParticleInitialValues

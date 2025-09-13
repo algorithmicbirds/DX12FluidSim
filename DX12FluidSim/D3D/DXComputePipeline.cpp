@@ -79,7 +79,8 @@ void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdLi
     UINT StructuredBufferSize = sizeof(ParticleStructuredBuffer) * ParticleCount;
     std::vector<ParticleStructuredBuffer> particleData(ParticleCount);
 
-    ArrangeParticlesInSquare(particleData);
+    //ArrangeParticlesInSquare(particleData);
+    ArrangeParticlesRandomly(particleData);
 
     Utils::CreateUploadBuffer(
         DeviceRef,
@@ -169,6 +170,29 @@ void DXComputePipeline::CreateDensityTexture()
         DensityTexture
     );
 }
+
+void DXComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData)
+{
+    const float boxWidth = 6.0f;
+    const float boxHeight = 3.5f;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> distX(-boxWidth / 2.0f, boxWidth / 2.0f);
+    std::uniform_real_distribution<float> distY(-boxHeight / 2.0f, boxHeight / 2.0f);
+
+    for (UINT i = 0; i < ParticleCount; ++i)
+    {
+        ParticleStructuredBuffer &p = particleData[i];
+
+        p.Position.x = distX(gen);
+        p.Position.y = distY(gen);
+        p.Position.z = 0.0f;
+
+        p.Velocity = {0.0f, 0.0f, 0.0f};
+    }
+}
+
 void DXComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData)
 {
     int particlesPerRow = (int)sqrt(ParticleCount);

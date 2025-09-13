@@ -2,5 +2,5 @@
 
 namespace RendererConfig
 {
-constexpr UINT MSAACount = 4;
+constexpr UINT MSAACount = 8;
 }

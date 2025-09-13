@@ -41,11 +41,17 @@ struct TimerConstant
     float DeltaTime;
 };
 
-struct SimParamsConstants
+struct ComputeSimParamsConstants
 {
-    float Gravity = -9.81f;
-    float Damping = 1.0f;
-    UINT Pause = 0;
+    float Gravity = SimInitials::Gravity;
+    float Damping = SimInitials::CollisionDamping;
+    UINT Pause = SimInitials::Pause;
+};
+
+struct GraphicsSimParamsConstants
+{
+    DirectX::XMFLOAT4 BaseColor = SimInitials::PariticleBaseColor;
+    DirectX::XMFLOAT4 GlowColor = SimInitials::PariticleGlowColor;
 };
 
 struct DebugConstantGPUData
@@ -55,10 +61,9 @@ struct DebugConstantGPUData
     D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
 };
 
-struct ScreenConstantFrag
+struct ColorConstant
 {
-    DirectX::XMFLOAT2 ScreenSize;
-    UINT ParticleCount;
+    DirectX::XMFLOAT4 BaseColor;
 };
 
 class ConstantBuffers
@@ -75,8 +80,9 @@ public:
     void SetGravityData(float Gravity);
     void SetCollisionDampingData(float CollisionDamping);
     void SetPauseToggle(UINT PauseToggle);
-    void SetHeightAndWidth(float Height, float Width);
-    void UpdateSimParamsData();
+    void SetUpdatedBaseColor(DirectX::XMFLOAT4 Color);
+    void SetUpdatedGlowColor(DirectX::XMFLOAT4 Color);
+    void UpdateComputeSimParamsData();
     void UpdateCameraBuffer();
     void UpdateShaderTime(float DeltaTime);
     void InitializeBuffers(ID3D12Device14 &Device);
@@ -87,34 +93,32 @@ public:
     }
     void OnResize(float NewAspectRatio);
 
-
 public:
     D3D12_GPU_VIRTUAL_ADDRESS GetTimerGPUVirtualAddress() const { return TimerCB.GPUAddress; }
     D3D12_GPU_VIRTUAL_ADDRESS GetBoundingBoxGPUVirtualAddress() const { return BoundingBoxCB.GPUAddress; }
-    D3D12_GPU_VIRTUAL_ADDRESS GetSimParamsGPUVirtualAddress() const { return SimParamsCB.GPUAddress; }
-    D3D12_GPU_VIRTUAL_ADDRESS GetScreenParamsGPUVirtualAddress() const { return ScreenCB.GPUAddress; }
+    D3D12_GPU_VIRTUAL_ADDRESS GetComputeSimParamsGPUVirtualAddress() const { return ComputeSimParamsCB.GPUAddress; }
     D3D12_GPU_VIRTUAL_ADDRESS GetCameraGPUVirtualAddress() const { return CameraCB.GPUAddress; }
+    D3D12_GPU_VIRTUAL_ADDRESS GetGraphicsSimParamsGPUVirtualAddress() const { return GraphicsSimParamsCB.GPUAddress; }
 
 private:
     void UpdateBoundingBoxData();
 
 private:
     Camera Camera;
-    ScreenConstantFrag ScreenConstCPU{
-        {1920, 1080},
-        SimInitials::ParticleCount
-    };
 
     BoundingBoxConstant BoundingBoxCPU{
         {-SimInitials::BoundingBoxWidth, -SimInitials::BoundingBoxHeight},
         {SimInitials::BoundingBoxWidth,  SimInitials::BoundingBoxHeight }
     };
 
-    SimParamsConstants SimParamsCPU{SimInitials::Gravity, SimInitials::CollisionDamping, SimInitials::Pause};
+    ComputeSimParamsConstants ComputeSimParamsCPU{
+        SimInitials::Gravity, SimInitials::CollisionDamping, SimInitials::Pause
+    };
+    GraphicsSimParamsConstants GraphicsSimParamsCPU{SimInitials::PariticleBaseColor, SimInitials::PariticleGlowColor};
 
     GPUConstantBuffer<TimerConstant> TimerCB;
     GPUConstantBuffer<CameraConstant> CameraCB;
     GPUConstantBuffer<BoundingBoxConstant> BoundingBoxCB;
-    GPUConstantBuffer<SimParamsConstants> SimParamsCB;
-    GPUConstantBuffer<ScreenConstantFrag> ScreenCB;
+    GPUConstantBuffer<ComputeSimParamsConstants> ComputeSimParamsCB;
+    GPUConstantBuffer<GraphicsSimParamsConstants> GraphicsSimParamsCB;
 };

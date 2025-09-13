@@ -5,6 +5,12 @@ struct PixelDebugData
     float DebugDensity;
 };
 
+cbuffer GraphicsSimParam : register(b4)
+{
+    float4 ParamParticleColor;
+    float4 ParamParticleGlowColor;
+}
+
 RWStructuredBuffer<PixelDebugData> PixelDebug : register(u0);
 
 float4 PSMain(VSOutput input) : SV_TARGET
@@ -14,5 +20,9 @@ float4 PSMain(VSOutput input) : SV_TARGET
     if (distSq > 1.0)
         discard;
 
-    return float4(input.Color, 1.0f);
+    float falloff = exp(-distSq * distSq / (input.ParticleSmoothingRad * input.ParticleSmoothingRad));
+
+    float brightness = 1.0 - exp(-input.ParticleDensity * falloff);
+
+    return float4(ParamParticleGlowColor.xyz * brightness, brightness);
 }

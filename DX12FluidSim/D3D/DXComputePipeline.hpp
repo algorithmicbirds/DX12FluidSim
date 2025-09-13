@@ -46,6 +46,7 @@ public:
     void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count);
     void ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
     void CreateDensityTexture();
+    void ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData);
     void ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData);
     D3D12_GPU_VIRTUAL_ADDRESS GetDensityTexGPUAddress() const
     {
