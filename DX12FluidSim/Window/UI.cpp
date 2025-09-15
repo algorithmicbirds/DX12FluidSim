@@ -94,6 +94,7 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
         SimInitials::PariticleGlowColor.z,
         SimInitials::PariticleGlowColor.w
     };
+    static float StiffnessConstant = SimInitials::StiffnessConstant;
 
     if (ImGui::SliderFloat("Width", &halfWidth, 0.5f, 3.5f))
     {
@@ -111,6 +112,10 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     if (ImGui::SliderFloat("CollisonDamping", &collisionDamping, 0.0f, 1.0f))
     {
         OnCollisionDampingChanged.fire(collisionDamping);
+    }
+    if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 1.0f))
+    {
+        OnStifnessConstantChanged.fire(StiffnessConstant);
     }
     if (ImGui::Button(pause ? "Pause" : "Play"))
     {

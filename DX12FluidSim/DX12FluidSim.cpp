@@ -77,6 +77,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ui.OnPauseToggled.connect<&ConstantBuffers::SetPauseToggle>(constantBuffers);
         ui.OnParticleBaseColorChanged.connect<&ConstantBuffers::SetUpdatedBaseColor>(constantBuffers);
         ui.OnParticleGlowColorChanged.connect<&ConstantBuffers::SetUpdatedGlowColor>(constantBuffers);
+        ui.OnStifnessConstantChanged.connect<&ConstantBuffers::SetStiffnessConstant>(constantBuffers);
 
         Context.DispatchCmdList();
         while (!Window.ShouldClose())

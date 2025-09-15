@@ -2,6 +2,7 @@
 #include "Shared/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 #include <random>
+#include <iostream>
 
 DXComputePipeline::DXComputePipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
 
@@ -52,25 +53,6 @@ void DXComputePipeline::CreateDescHeap()
         sizeof(DebugStructuredBuffer),
         2
     );
-
-  DensityTexUAVGPUHandle = Utils::CreateTextureDescriptor(
-        DeviceRef,
-        DescriptorType::UAV,
-        DensityTexture,
-        DescriptorHeap,
-        DXGI_FORMAT_R32_FLOAT,
-        3 
-    );
-
-    DensityTexSRVGPUHandle = Utils::CreateTextureDescriptor(
-        DeviceRef,
-        DescriptorType::SRV,
-        DensityTexture,
-        DescriptorHeap,
-        DXGI_FORMAT_R32_FLOAT,
-        4 
-    );
-
 }
 
 void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count)

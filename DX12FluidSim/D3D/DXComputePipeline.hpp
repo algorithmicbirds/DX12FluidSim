@@ -11,7 +11,7 @@ struct ParticleStructuredBuffer
     DirectX::XMFLOAT3 Velocity;
     float ParticleSmoothingRadius = ParticleInitialValues::ParticleSmoothingRadius;
     float Density = 0;
-    float Pressure;
+    DirectX::XMFLOAT2 Pressure;
     float Mass = 1.0f;
 };
 
@@ -56,8 +56,6 @@ public:
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleSRVGPUHandle() const { return ParticleSRVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleUAVGPUHandle() const { return ParticleUAVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetDebugUAVGPUHandle() const { return DebugUAVGPUHandle; }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetDensityTexUAVGPUHandle() const { return DensityTexUAVGPUHandle; }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetDesnsityTexSRVGPUHandle() const { return DensityTexSRVGPUHandle; }
     ID3D12Resource2 *GetParticleBuffer() { return ParticleData.DefaultBuffer.Get(); }
     ID3D12DescriptorHeap *GetDescriptorHeap() { return DescriptorHeap.Get(); }
     ComPtr<ID3D12DescriptorHeap> GetDecriptorHeapObj() { return DescriptorHeap; }
@@ -80,8 +78,6 @@ private:
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleUAVGPUHandle{};
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleSRVGPUHandle{};
     D3D12_GPU_DESCRIPTOR_HANDLE DebugUAVGPUHandle{};
-    D3D12_GPU_DESCRIPTOR_HANDLE DensityTexUAVGPUHandle{};
-    D3D12_GPU_DESCRIPTOR_HANDLE DensityTexSRVGPUHandle{};
 
     ParticleGPUData ParticleData;
     GPUDebugResources GPUDebugResourcesData;

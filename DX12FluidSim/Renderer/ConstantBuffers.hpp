@@ -45,6 +45,7 @@ struct ComputeSimParamsConstants
 {
     float Gravity = SimInitials::Gravity;
     float Damping = SimInitials::CollisionDamping;
+    float StiffnessConstant = SimInitials::StiffnessConstant;
     UINT Pause = SimInitials::Pause;
 };
 
@@ -79,6 +80,7 @@ public:
     void SetBoundingBoxWidth(float Width);
     void SetGravityData(float Gravity);
     void SetCollisionDampingData(float CollisionDamping);
+    void SetStiffnessConstant(float StiffnessConstant);
     void SetPauseToggle(UINT PauseToggle);
     void SetUpdatedBaseColor(DirectX::XMFLOAT4 Color);
     void SetUpdatedGlowColor(DirectX::XMFLOAT4 Color);
@@ -112,7 +114,10 @@ private:
     };
 
     ComputeSimParamsConstants ComputeSimParamsCPU{
-        SimInitials::Gravity, SimInitials::CollisionDamping, SimInitials::Pause
+        SimInitials::Gravity,
+        SimInitials::CollisionDamping,
+        SimInitials::StiffnessConstant,
+        SimInitials::Pause
     };
     GraphicsSimParamsConstants GraphicsSimParamsCPU{SimInitials::PariticleBaseColor, SimInitials::PariticleGlowColor};
 

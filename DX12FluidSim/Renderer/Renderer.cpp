@@ -46,7 +46,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ClearFrame(CmdList);
     RunParticlesComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
-    RunDensityVisualizationGraphicsPipeline(CmdList);
+    //RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
 
@@ -73,9 +73,6 @@ void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
     );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::DebugUAV_t1, ParticleComputePipeline->GetDebugUAVGPUHandle()
-    );
-    CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::DensityTexUAV_t2, ParticleComputePipeline->GetDensityTexUAVGPUHandle()
     );
 
     UINT ThreadGroupSize = 256;
@@ -162,10 +159,15 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 
     UINT PrecompParticleCosnstBufferSize = sizeof(PrecomputedParticleConstants);
     PrecomputedParticleConstants PrecompParticleData{};
-    // this calculates 2d kernal
-    const float Pol6SmoothingRadiusPow8 = pow(ParticleInitialValues::ParticleSmoothingRadius, 8);
+    // this calculates 2d kernal poly6
+    const float Poly6SmoothingRadiusPow8 = pow(ParticleInitialValues::ParticleSmoothingRadius, 8);
     PrecompParticleData.Poly6SmoothingRadiusSquared = pow(ParticleInitialValues::ParticleSmoothingRadius, 2);
-    PrecompParticleData.Poly6KernelConst = 4.0f / (PI * Pol6SmoothingRadiusPow8);
+    PrecompParticleData.Poly6KernelConst = 4.0f / (PI * Poly6SmoothingRadiusPow8);
+    
+    // 2d spiky graident
+    const float SpikySmoothingRadPow5 = pow(ParticleInitialValues::ParticleSmoothingRadius, 5);
+    PrecompParticleData.SpikyKernelConst = -(30.0f / (PI * SpikySmoothingRadPow5));
+
     PrecompParticleData.ParticleCount = ParticleCount;
 
     Utils::CreateUploadBuffer(

@@ -30,6 +30,11 @@ void ConstantBuffers::SetCollisionDampingData(float CollisionDamping)
     UpdateComputeSimParamsData();
 }
 
+void ConstantBuffers::SetStiffnessConstant(float StiffnessConstant) {
+    ComputeSimParamsCPU.StiffnessConstant = StiffnessConstant;
+    UpdateComputeSimParamsData();
+}
+
 void ConstantBuffers::SetPauseToggle(UINT PauseToggle)
 {
     ComputeSimParamsCPU.Pause = PauseToggle;
@@ -67,7 +72,6 @@ void ConstantBuffers::InitializeBuffers(ID3D12Device14 &Device)
 {
     Camera.SetPosition({0.0f, 0.0f, -5.0f});
     Camera.SetTarget({0.0f, 0.0f, 0.0f});
-    //Camera.SetLens(DirectX::XM_PIDIV4, AspectRatio, 0.1f, 1000.0f);
 
     ComputeSimParamsCB.Initialize(Device);
     GraphicsSimParamsCB.Initialize(Device);

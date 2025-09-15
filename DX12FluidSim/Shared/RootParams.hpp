@@ -19,5 +19,4 @@ constexpr UINT ComputeSimParamsCB_b2 = 2;
 constexpr UINT PrecomputedKernalCB_b3 = 3;
 constexpr UINT ParticleUAV_t0 = 4;
 constexpr UINT DebugUAV_t1 = 5;
-constexpr UINT DensityTexUAV_t2 = 6;
 } // namespace ComputeRootParams

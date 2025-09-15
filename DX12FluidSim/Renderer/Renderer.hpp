@@ -25,6 +25,7 @@ struct PrecomputedParticleConstants
 {
     float Poly6SmoothingRadiusSquared;
     float Poly6KernelConst;
+    float SpikyKernelConst;
     UINT ParticleCount;
 };
 

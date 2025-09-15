@@ -17,6 +17,7 @@ public:
     Nano::Signal<void(float)> OnWidthChanged;
     Nano::Signal<void(float)> OnGravityChanged;
     Nano::Signal<void(float)> OnCollisionDampingChanged;
+    Nano::Signal<void(float)> OnStifnessConstantChanged;
     Nano::Signal<void(UINT)> OnPauseToggled;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleBaseColorChanged;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleGlowColorChanged;
