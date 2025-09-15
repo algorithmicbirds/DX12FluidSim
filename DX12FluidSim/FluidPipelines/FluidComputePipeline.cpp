@@ -1,61 +1,37 @@
-#include "DXComputePipeline.hpp"
+#include "FluidComputePipeline.hpp"
 #include "Shared/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 #include <random>
 #include <iostream>
+#include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 
-DXComputePipeline::DXComputePipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
+FluidComputePipeline::FluidComputePipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
 
-DXComputePipeline::~DXComputePipeline() {}
+FluidComputePipeline::~FluidComputePipeline() {}
 
-void DXComputePipeline::CreatePipeline(const std::string &CSFilePath)
+void FluidComputePipeline::CreatePipeline(const std::string &CSFilePath, FluidHeapDescriptor &HeapDesc)
 {
     std::vector<char> CSCode = Utils::ReadFile(CSFilePath);
-    CreateDensityTexture();
-    CreateDescHeap();
+    CreateBufferDesc(HeapDesc);
     CreatePipelineState(CSCode);
 }
 
-void DXComputePipeline::CreateDescHeap()
+void FluidComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
 {
-    D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
-    HeapDesc.NumDescriptors = 6;
-    HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-
-    DX_VALIDATE(DeviceRef.CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DescriptorHeap)), DescriptorHeap);
-    ParticleUAVGPUHandle = Utils::CreateBufferDescriptor(
-        DeviceRef,
-        DescriptorType::UAV,
-        ParticleData.DefaultBuffer,
-        DescriptorHeap,
-        ParticleCount,
-        sizeof(ParticleStructuredBuffer),
-        0
+    ParticleForcesUAVGPUHandle = HeapDesc.AllocateDescriptor(
+        DescriptorType::UAV, ParticleData.DefaultBuffer, ParticleCount, sizeof(ParticleStructuredBuffer)
     );
 
-    ParticleSRVGPUHandle = Utils::CreateBufferDescriptor(
-        DeviceRef,
-        DescriptorType::SRV,
-        ParticleData.DefaultBuffer,
-        DescriptorHeap,
-        ParticleCount,
-        sizeof(ParticleStructuredBuffer),
-        1
+    ParticleForcesSRVGPUHandle = HeapDesc.AllocateDescriptor(
+        DescriptorType::SRV, ParticleData.DefaultBuffer, ParticleCount, sizeof(ParticleStructuredBuffer)
     );
 
-    DebugUAVGPUHandle = Utils::CreateBufferDescriptor(
-        DeviceRef,
-        DescriptorType::UAV,
-        GPUDebugResourcesData.DefaultBuffer,
-        DescriptorHeap,
-        ParticleCount,
-        sizeof(DebugStructuredBuffer),
-        2
+    DebugUAVGPUHandle = HeapDesc.AllocateDescriptor(
+        DescriptorType::UAV, GPUDebugResourcesData.DefaultBuffer, ParticleCount, sizeof(DebugStructuredBuffer)
     );
 }
 
-void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count)
+void FluidComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count)
 {
     ParticleCount = Count;
     UINT StructuredBufferSize = sizeof(ParticleStructuredBuffer) * ParticleCount;
@@ -88,7 +64,7 @@ void DXComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdLi
         Utils::CreateBuffer(DeviceRef, DebugBufSize, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST);
 }
 
-void DXComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
+void FluidComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
 {
     if (!GPUDebugResourcesData.DefaultBuffer || !GPUDebugResourcesData.ReadBackBuffer)
         return;
@@ -123,7 +99,7 @@ void DXComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
     GPUDebugResourcesData.ReadBackBuffer->Unmap(0, &writtenRange);
 }
 
-void DXComputePipeline::CreateDensityTexture()
+void FluidComputePipeline::CreateDensityTexture()
 {
     D3D12_RESOURCE_DESC TexDesc{};
     TexDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -153,7 +129,7 @@ void DXComputePipeline::CreateDensityTexture()
     );
 }
 
-void DXComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData)
+void FluidComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData)
 {
     const float boxWidth = 6.0f;
     const float boxHeight = 3.5f;
@@ -175,7 +151,7 @@ void DXComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleStructuredB
     }
 }
 
-void DXComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData)
+void FluidComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData)
 {
     int particlesPerRow = (int)sqrt(ParticleCount);
     int particlesPerCol = (ParticleCount - 1) / particlesPerRow + 1;
@@ -201,7 +177,7 @@ void DXComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredB
     }
 }
 
-void DXComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
+void FluidComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
 {
     VALIDATE_PTR(RootSignature.Get());
 
@@ -213,7 +189,7 @@ void DXComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
     DX_VALIDATE(DeviceRef.CreateComputePipelineState(&Desc, IID_PPV_ARGS(&PipelineState)), PipelineState);
 }
 
-void DXComputePipeline::BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList)
+void FluidComputePipeline::BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList)
 {
     CmdList->SetPipelineState(PipelineState.Get());
     CmdList->SetComputeRootSignature(RootSignature.Get());

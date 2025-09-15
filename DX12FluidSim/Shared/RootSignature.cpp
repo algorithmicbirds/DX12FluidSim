@@ -17,7 +17,7 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     RootParam[ComputeRootParams::BoundingBoxCB_b1] = CreateCBV(1);
     RootParam[ComputeRootParams::ComputeSimParamsCB_b2] = CreateCBV(2);
     RootParam[ComputeRootParams::PrecomputedKernalCB_b3] = CreateCBV(3);
-    RootParam[ComputeRootParams::ParticleUAV_t0] = CreateTableParam(ParticleRange);
+    RootParam[ComputeRootParams::ParticleForcesUAV_u0] = CreateTableParam(ParticleRange);
     RootParam[ComputeRootParams::DebugUAV_t1] = CreateTableParam(DebugRange);
     ComPtr<ID3D12RootSignature> RootSig;
     RootSig = CreateRootSig(Device, RootParam, _countof(RootParam));
@@ -37,7 +37,7 @@ ComPtr<ID3D12RootSignature> CreateGraphicsRootSig(ID3D12Device14 &Device)
     RootParam[GraphicsRootParams::TimerCB_b2] = CreateCBV(2, D3D12_SHADER_VISIBILITY_VERTEX);
     RootParam[GraphicsRootParams::BoundingBoxCB_b3] = CreateCBV(3, D3D12_SHADER_VISIBILITY_VERTEX);
     RootParam[GraphicsRootParams::GraphicsSimParams_b4] = CreateCBV(4, D3D12_SHADER_VISIBILITY_PIXEL);
-    RootParam[GraphicsRootParams::ParticleSRV_t0] = CreateTableParam(ParticlesSRVRange);
+    RootParam[GraphicsRootParams::ParticleForcesSRV_t0] = CreateTableParam(ParticlesSRVRange);
     RootParam[GraphicsRootParams::DebugUAV_u0] = CreateTableParam(DebugRange);
 
     ComPtr<ID3D12RootSignature> RootSignature;

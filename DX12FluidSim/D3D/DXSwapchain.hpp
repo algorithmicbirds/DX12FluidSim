@@ -67,7 +67,6 @@ public:
 
 private:
     bool Init();
-    void ShutDown();
     bool GetBuffers();
     void ReleaseBuffers();
     void UpdateViewportAndScissor();

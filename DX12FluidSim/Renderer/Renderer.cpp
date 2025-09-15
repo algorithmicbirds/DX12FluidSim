@@ -4,9 +4,10 @@
 #include "D3D/DXGraphicsPipeline.hpp"
 #include <iostream>
 #include "Shared/Utils.hpp"
-#include "D3D/DXComputePipeline.hpp"
+#include "FluidPipelines/FluidComputePipeline.hpp"
 #include "Shared/RootSignature.hpp"
 #include "Shared/RootParams.hpp"
+#include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 
 #define PI 3.14159265f
 
@@ -44,7 +45,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
 {
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
-    RunParticlesComputePipeline(CmdList);
+    RunParticlesForcesComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
     //RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
@@ -59,20 +60,20 @@ void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->ClearDepthStencilView(SwapchainRef.GetMSAADSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
 
-void Renderer::RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
-    ParticleComputePipeline->BindRootAndPSO(CmdList);
+    ParticleForcesComputePipeline->BindRootAndPSO(CmdList);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, ConstantBuffersRef.GetTimerGPUVirtualAddress());
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ComputeSimParamsCB_b2, ConstantBuffersRef.GetComputeSimParamsGPUVirtualAddress());
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
-    ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticleUAV_t0, ParticleComputePipeline->GetParticleUAVGPUHandle()
+        ComputeRootParams::ParticleForcesUAV_u0, ParticleForcesComputePipeline->GetParticleForcesUAVGPUHandle()
     );
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::DebugUAV_t1, ParticleComputePipeline->GetDebugUAVGPUHandle()
+        ComputeRootParams::DebugUAV_t1, ParticleForcesComputePipeline->GetDebugUAVGPUHandle()
     );
 
     UINT ThreadGroupSize = 256;
@@ -94,10 +95,10 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->SetGraphicsRootConstantBufferView(
         GraphicsRootParams::GraphicsSimParams_b4, ConstantBuffersRef.GetGraphicsSimParamsGPUVirtualAddress()
     );
-    ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
-        GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleSRVGPUHandle()
+        GraphicsRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
     );
 
     CmdList->RSSetViewports(1, &Viewport);
@@ -120,12 +121,12 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
     CmdList->SetGraphicsRootConstantBufferView(
         GraphicsRootParams::GraphicsSimParams_b4, ConstantBuffersRef.GetGraphicsSimParamsGPUVirtualAddress()
     );
-    ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(_countof(Heaps), Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
-        GraphicsRootParams::ParticleSRV_t0, ParticleComputePipeline->GetParticleSRVGPUHandle()
+        GraphicsRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
     );
-    CmdList->SetGraphicsRootDescriptorTable(GraphicsRootParams::DebugUAV_u0, DebugBuffer.GetDebugGPUDescHandle());
+    //CmdList->SetGraphicsRootDescriptorTable(GraphicsRootParams::DebugUAV_u0, DebugBuffer.GetDebugGPUDescHandle());
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
 
@@ -141,8 +142,6 @@ void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdLis
     BoundingBoxPipeline->BindRootAndPSO(CmdList);
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress());
     CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBoxCB_b3, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
-    ID3D12DescriptorHeap *Heaps[] = {ParticleComputePipeline->GetDescriptorHeap()};
-    CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
     constexpr UINT BoxVertices = 5;
@@ -152,10 +151,11 @@ void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdLis
 
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
-    ParticleComputePipeline = std::make_unique<DXComputePipeline>(DeviceRef);
-    ParticleComputePipeline->SetRootSignature(RootSignature::CreateComputeRootSig(DeviceRef));
-    ParticleComputePipeline->CreateStructuredBuffer(CmdList, ParticleCount);
-    ParticleComputePipeline->CreatePipeline(SHADER_PATH "ParticleSystem/Particle_cs.cso");
+    FluidHeapDesc = std::make_unique<FluidHeapDescriptor>(DeviceRef);
+    ParticleForcesComputePipeline = std::make_unique<FluidComputePipeline>(DeviceRef);
+    ParticleForcesComputePipeline->SetRootSignature(RootSignature::CreateComputeRootSig(DeviceRef));
+    ParticleForcesComputePipeline->CreateStructuredBuffer(CmdList, ParticleCount);
+    ParticleForcesComputePipeline->CreatePipeline(SHADER_PATH "ParticleSystem/Particle_cs.cso", *FluidHeapDesc.get());
 
     UINT PrecompParticleCosnstBufferSize = sizeof(PrecomputedParticleConstants);
     PrecomputedParticleConstants PrecompParticleData{};
@@ -180,7 +180,7 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     );
     ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress();
     
-    DebugBuffer.SetDescriptorHeap(ParticleComputePipeline->GetDecriptorHeapObj());
-    DebugBuffer.CreateDebugUAVDesc(DeviceRef);
+    //DebugBuffer.SetDescriptorHeap(ParticleComputePipeline->GetDecriptorHeapObj());
+    //DebugBuffer.CreateDebugUAVDesc(DeviceRef);
     ConstantBuffersRef.InitializeBuffers(DeviceRef);
 }

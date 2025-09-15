@@ -33,13 +33,14 @@ struct GPUDebugResources
     ComPtr<ID3D12Resource2> ReadBackBuffer;
 };
 
-class DXComputePipeline
+class FluidComputePipeline
 {
 public:
-    DXComputePipeline(ID3D12Device14 &Device);
-    ~DXComputePipeline();
+    FluidComputePipeline(ID3D12Device14 &Device);
+    ~FluidComputePipeline();
 
-    void CreatePipeline(const std::string &CSFilePath);
+    void CreatePipeline(const std::string &CSFilePath, class FluidHeapDescriptor &HeapDesc);
+    void CreateBufferDesc(class FluidHeapDescriptor &HeapDesc);
     void BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList);
 
     void SetRootSignature(ComPtr<ID3D12RootSignature> InRootSig) { RootSignature = InRootSig; }
@@ -53,15 +54,12 @@ public:
         return DensityTexture->GetGPUVirtualAddress();
     }
 
-    D3D12_GPU_DESCRIPTOR_HANDLE GetParticleSRVGPUHandle() const { return ParticleSRVGPUHandle; }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetParticleUAVGPUHandle() const { return ParticleUAVGPUHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesSRVGPUHandle() const { return ParticleForcesSRVGPUHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesUAVGPUHandle() const { return ParticleForcesUAVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetDebugUAVGPUHandle() const { return DebugUAVGPUHandle; }
     ID3D12Resource2 *GetParticleBuffer() { return ParticleData.DefaultBuffer.Get(); }
-    ID3D12DescriptorHeap *GetDescriptorHeap() { return DescriptorHeap.Get(); }
-    ComPtr<ID3D12DescriptorHeap> GetDecriptorHeapObj() { return DescriptorHeap; }
 
 private:
-    void CreateDescHeap();
     void CreatePipelineState(const std::vector<char> &CSCode);
 
 private:
@@ -69,14 +67,12 @@ private:
 
     UINT ParticleCount = 0;
 
-    ComPtr<ID3D12DescriptorHeap> DescriptorHeap;
-
     ComPtr<ID3D12RootSignature> RootSignature;
     ComPtr<ID3D12PipelineState> PipelineState;
     ComPtr<ID3D12Resource2> DensityTexture;
 
-    D3D12_GPU_DESCRIPTOR_HANDLE ParticleUAVGPUHandle{};
-    D3D12_GPU_DESCRIPTOR_HANDLE ParticleSRVGPUHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE ParticleForcesUAVGPUHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE ParticleForcesSRVGPUHandle{};
     D3D12_GPU_DESCRIPTOR_HANDLE DebugUAVGPUHandle{};
 
     ParticleGPUData ParticleData;

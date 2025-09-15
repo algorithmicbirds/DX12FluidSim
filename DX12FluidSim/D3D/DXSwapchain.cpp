@@ -50,12 +50,6 @@ bool DXSwapchain::Init()
 
 void DXSwapchain::Present() { SwapChain3->Present(0, 0); }
 
-void DXSwapchain::ShutDown()
-{
-    ReleaseBuffers();
-    SwapChain3.Reset();
-}
-
 bool DXSwapchain::GetBuffers()
 {
     for (size_t i = 0; i < FrameCount; ++i)

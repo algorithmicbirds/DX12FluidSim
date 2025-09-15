@@ -12,7 +12,8 @@
 
 class DXGraphicsPipeline;
 class DXSwapchain;
-class DXComputePipeline;
+class FluidComputePipeline;
+class FluidHeapDescriptor;
 
 struct PrecomputedParticleGPUData
 {
@@ -49,7 +50,7 @@ public:
 
 private:
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
-    void RunParticlesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
@@ -62,13 +63,14 @@ private:
     ConstantBuffers &ConstantBuffersRef;
 
     std::unique_ptr<DXGraphicsPipeline> BoundingBoxPipeline;
-    std::unique_ptr<DXComputePipeline> ParticleComputePipeline;
+    std::unique_ptr<FluidComputePipeline> ParticleForcesComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
+    std::unique_ptr<FluidHeapDescriptor> FluidHeapDesc;
 
     UINT ParticleCount = SimInitials::ParticleCount;
     PrecomputedParticleGPUData ParticleBuffer;
     DebugConstants DebugConst;
 
-    StupidDebugBuffer DebugBuffer;
+    //StupidDebugBuffer DebugBuffer;
 };
