@@ -4,10 +4,11 @@
 #include "D3D/DXGraphicsPipeline.hpp"
 #include <iostream>
 #include "Shared/Utils.hpp"
-#include "FluidPipelines/FluidComputePipeline.hpp"
+#include "FluidPipelines/FluidForcesComputePipeline.hpp"
 #include "Shared/RootSignature.hpp"
 #include "Shared/RootParams.hpp"
 #include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
+#include "FluidPipelines/FluidIntegrateComputePipeline.hpp"
 
 #define PI 3.14159265f
 
@@ -152,14 +153,25 @@ void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdLis
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
     FluidHeapDesc = std::make_unique<FluidHeapDescriptor>(DeviceRef);
-    ParticleForcesComputePipeline = std::make_unique<FluidComputePipeline>(DeviceRef);
-    ParticleForcesComputePipeline->SetRootSignature(RootSignature::CreateComputeRootSig(DeviceRef));
+
+    ComPtr<ID3D12RootSignature> CompRootSig = RootSignature::CreateComputeRootSig(DeviceRef);
+
+    ParticleForcesComputePipeline = std::make_unique<FluidForcesComputePipeline>(DeviceRef);
+    ParticleForcesComputePipeline->SetRootSignature(CompRootSig);
     ParticleForcesComputePipeline->CreateStructuredBuffer(CmdList, ParticleCount);
     ParticleForcesComputePipeline->CreatePipeline(SHADER_PATH "ParticleSystem/Particle_cs.cso", *FluidHeapDesc.get());
 
+    ParticleIntegrateComputePipeline = std::make_unique<FluidIntegrateComputePipeline>(DeviceRef);
+    ParticleIntegrateComputePipeline->SetRootSignature(CompRootSig);
+    ParticleIntegrateComputePipeline->CreateStructuredBuffer(CmdList);
+    ParticleIntegrateComputePipeline->CreatePipeline(
+        SHADER_PATH "ParticleSystem/Particle_cs.cso", *FluidHeapDesc.get()
+    );
+
+
     UINT PrecompParticleCosnstBufferSize = sizeof(PrecomputedParticleConstants);
     PrecomputedParticleConstants PrecompParticleData{};
-    // this calculates 2d kernal poly6
+    // calculates 2d kernal poly6
     const float Poly6SmoothingRadiusPow8 = pow(ParticleInitialValues::ParticleSmoothingRadius, 8);
     PrecompParticleData.Poly6SmoothingRadiusSquared = pow(ParticleInitialValues::ParticleSmoothingRadius, 2);
     PrecompParticleData.Poly6KernelConst = 4.0f / (PI * Poly6SmoothingRadiusPow8);
@@ -169,7 +181,7 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     PrecompParticleData.SpikyKernelConst = -(30.0f / (PI * SpikySmoothingRadPow5));
 
     PrecompParticleData.ParticleCount = ParticleCount;
-
+    // creates global data that is shared between both pipelines
     Utils::CreateUploadBuffer(
         DeviceRef,
         CmdList,

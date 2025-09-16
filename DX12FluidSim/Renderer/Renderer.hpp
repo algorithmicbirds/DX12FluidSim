@@ -12,7 +12,8 @@
 
 class DXGraphicsPipeline;
 class DXSwapchain;
-class FluidComputePipeline;
+class FluidForcesComputePipeline;
+class FluidIntegrateComputePipeline;
 class FluidHeapDescriptor;
 
 struct PrecomputedParticleGPUData
@@ -63,7 +64,8 @@ private:
     ConstantBuffers &ConstantBuffersRef;
 
     std::unique_ptr<DXGraphicsPipeline> BoundingBoxPipeline;
-    std::unique_ptr<FluidComputePipeline> ParticleForcesComputePipeline;
+    std::unique_ptr<FluidForcesComputePipeline> ParticleForcesComputePipeline;
+    std::unique_ptr<FluidIntegrateComputePipeline> ParticleIntegrateComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
     std::unique_ptr<FluidHeapDescriptor> FluidHeapDesc;

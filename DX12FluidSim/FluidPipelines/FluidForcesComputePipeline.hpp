@@ -33,11 +33,14 @@ struct GPUDebugResources
     ComPtr<ID3D12Resource2> ReadBackBuffer;
 };
 
-class FluidComputePipeline
+class FluidForcesComputePipeline
 {
 public:
-    FluidComputePipeline(ID3D12Device14 &Device);
-    ~FluidComputePipeline();
+    FluidForcesComputePipeline(ID3D12Device14 &Device);
+    ~FluidForcesComputePipeline();
+
+    FluidForcesComputePipeline &operator=(const FluidForcesComputePipeline &) = delete;
+    FluidForcesComputePipeline(const FluidForcesComputePipeline &) = delete;
 
     void CreatePipeline(const std::string &CSFilePath, class FluidHeapDescriptor &HeapDesc);
     void CreateBufferDesc(class FluidHeapDescriptor &HeapDesc);
@@ -49,15 +52,11 @@ public:
     void CreateDensityTexture();
     void ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData);
     void ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData);
-    D3D12_GPU_VIRTUAL_ADDRESS GetDensityTexGPUAddress() const
-    {
-        return DensityTexture->GetGPUVirtualAddress();
-    }
+    D3D12_GPU_VIRTUAL_ADDRESS GetDensityTexGPUAddress() const { return DensityTexture->GetGPUVirtualAddress(); }
 
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesSRVGPUHandle() const { return ParticleForcesSRVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesUAVGPUHandle() const { return ParticleForcesUAVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetDebugUAVGPUHandle() const { return DebugUAVGPUHandle; }
-    ID3D12Resource2 *GetParticleBuffer() { return ParticleData.DefaultBuffer.Get(); }
 
 private:
     void CreatePipelineState(const std::vector<char> &CSCode);

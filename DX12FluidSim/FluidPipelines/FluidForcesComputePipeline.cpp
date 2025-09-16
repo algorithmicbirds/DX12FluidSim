@@ -1,22 +1,22 @@
-#include "FluidComputePipeline.hpp"
+#include "FluidForcesComputePipeline.hpp"
 #include "Shared/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 #include <random>
 #include <iostream>
 #include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 
-FluidComputePipeline::FluidComputePipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
+FluidForcesComputePipeline::FluidForcesComputePipeline(ID3D12Device14 &Device) : DeviceRef(Device) {}
 
-FluidComputePipeline::~FluidComputePipeline() {}
+FluidForcesComputePipeline::~FluidForcesComputePipeline() {}
 
-void FluidComputePipeline::CreatePipeline(const std::string &CSFilePath, FluidHeapDescriptor &HeapDesc)
+void FluidForcesComputePipeline::CreatePipeline(const std::string &CSFilePath, FluidHeapDescriptor &HeapDesc)
 {
     std::vector<char> CSCode = Utils::ReadFile(CSFilePath);
     CreateBufferDesc(HeapDesc);
     CreatePipelineState(CSCode);
 }
 
-void FluidComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
+void FluidForcesComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
 {
     ParticleForcesUAVGPUHandle = HeapDesc.AllocateDescriptor(
         DescriptorType::UAV, ParticleData.DefaultBuffer, ParticleCount, sizeof(ParticleStructuredBuffer)
@@ -31,7 +31,7 @@ void FluidComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
     );
 }
 
-void FluidComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count)
+void FluidForcesComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count)
 {
     ParticleCount = Count;
     UINT StructuredBufferSize = sizeof(ParticleStructuredBuffer) * ParticleCount;
@@ -64,7 +64,7 @@ void FluidComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *Cm
         Utils::CreateBuffer(DeviceRef, DebugBufSize, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST);
 }
 
-void FluidComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
+void FluidForcesComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
 {
     if (!GPUDebugResourcesData.DefaultBuffer || !GPUDebugResourcesData.ReadBackBuffer)
         return;
@@ -99,7 +99,7 @@ void FluidComputePipeline::ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
     GPUDebugResourcesData.ReadBackBuffer->Unmap(0, &writtenRange);
 }
 
-void FluidComputePipeline::CreateDensityTexture()
+void FluidForcesComputePipeline::CreateDensityTexture()
 {
     D3D12_RESOURCE_DESC TexDesc{};
     TexDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -129,7 +129,7 @@ void FluidComputePipeline::CreateDensityTexture()
     );
 }
 
-void FluidComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData)
+void FluidForcesComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData)
 {
     const float boxWidth = 6.0f;
     const float boxHeight = 3.5f;
@@ -151,7 +151,7 @@ void FluidComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleStructur
     }
 }
 
-void FluidComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData)
+void FluidForcesComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData)
 {
     int particlesPerRow = (int)sqrt(ParticleCount);
     int particlesPerCol = (ParticleCount - 1) / particlesPerRow + 1;
@@ -177,7 +177,7 @@ void FluidComputePipeline::ArrangeParticlesInSquare(std::vector<ParticleStructur
     }
 }
 
-void FluidComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
+void FluidForcesComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
 {
     VALIDATE_PTR(RootSignature.Get());
 
@@ -189,7 +189,7 @@ void FluidComputePipeline::CreatePipelineState(const std::vector<char> &CSCode)
     DX_VALIDATE(DeviceRef.CreateComputePipelineState(&Desc, IID_PPV_ARGS(&PipelineState)), PipelineState);
 }
 
-void FluidComputePipeline::BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList)
+void FluidForcesComputePipeline::BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList)
 {
     CmdList->SetPipelineState(PipelineState.Get());
     CmdList->SetComputeRootSignature(RootSignature.Get());
