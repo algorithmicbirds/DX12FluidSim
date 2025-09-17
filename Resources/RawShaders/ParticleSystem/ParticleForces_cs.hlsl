@@ -17,19 +17,14 @@ struct DebugData
     float DebugParticleCount;
 };
 
-RWStructuredBuffer<Particle> gParticles : register(u0);
+RWStructuredBuffer<Particle> gParticlesUAV : register(u0);
 RWStructuredBuffer<DebugData> DebugParticles : register(u1);
+StructuredBuffer<Particle> gParticlesSRV : register(t1);
 
 cbuffer TimeBufferCompute : register(b0)
 {
     float DeltaTimeCompute;
 }
-
-cbuffer BoundingBoxBuffer : register(b1)
-{
-    float2 BBMin;
-    float2 BBMax;
-};
 
 cbuffer SimControls : register(b2)
 {
@@ -53,14 +48,14 @@ float CalculateSmoothingKernalPoly6(float squaredDistance)
     if (squaredDistance >= Poly6SmoothingRadiusPow2)
         return 0.0f;
     
-    // 4/pi h^8 (h^2 - r^2)^3
+        // 4/pi h^8 (h^2 - r^2)^3
     float polynomialWeight = Poly6SmoothingRadiusPow2 - squaredDistance;
     return Poly6KernalConst * polynomialWeight * polynomialWeight * polynomialWeight;
 }
 
 float2 CalculatePressureForce(uint particleIndex)
 {
-    Particle currentParticle = gParticles[particleIndex];
+    Particle currentParticle = gParticlesSRV[particleIndex];
     float RestDensity = 1000.0f;
     float2 pressureForce = (0.0f, 0.0f);
     float currentPressure = StiffnessConstant * (currentParticle.Density - RestDensity);
@@ -69,7 +64,7 @@ float2 CalculatePressureForce(uint particleIndex)
     {
         if (neighborIndex == particleIndex)
             continue;
-        Particle neigborParticle = gParticles[neighborIndex];
+        Particle neigborParticle = gParticlesSRV[neighborIndex];
         
         float2 direction = currentParticle.Position.xy - neigborParticle.Position.xy;
         float distsq = dot(direction, direction);
@@ -80,11 +75,11 @@ float2 CalculatePressureForce(uint particleIndex)
         
         float distance = sqrt(distsq);
         
-        // (h-r)^2
+            // (h-r)^2
         float radialFalloff = (currentParticle.ParticleSmoothingRadius - distance);
         radialFalloff *= radialFalloff;
-        // spiky
-        // -(30.0f / (PI * h^5)) * (h-r)^2 * r/|r|
+            // spiky
+            // -(30.0f / (PI * h^5)) * (h-r)^2 * r/|r|
         float2 gradientContrib = SpikyKernalConst * radialFalloff * (direction / distance);
         pressureForce += -neigborParticle.Mass * (currentPressure + neigborPressure) / (2 * neigborParticle.Density) * gradientContrib;
     }
@@ -95,64 +90,24 @@ float2 CalculatePressureForce(uint particleIndex)
 float CalculateDensity(uint particleIndex)
 {
     float density = 0.0f;
-    Particle currentParticle = gParticles[particleIndex];
+    Particle currentParticle = gParticlesSRV[particleIndex];
     for (uint neighborIndex = 0; neighborIndex < ParticleCount; neighborIndex++)
     {
-        float2 distanceBetweenParticle = currentParticle.Position.xy - gParticles[neighborIndex].Position.xy;
+        float2 distanceBetweenParticle = currentParticle.Position.xy - gParticlesSRV[neighborIndex].Position.xy;
         float distSquared = dot(distanceBetweenParticle, distanceBetweenParticle);
         float Influnce = CalculateSmoothingKernalPoly6(distSquared);
-        density += gParticles[neighborIndex].Mass * Influnce;
+        density += gParticlesSRV[neighborIndex].Mass * Influnce;
     }
     return density;
 }
 
-void ResolveCollision(inout Particle particle)
-{
-    float SurfaceOffset = 0.001f;
-    
-        
-    if (particle.Position.x - particle.ParticleRadius < BBMin.x)
-    {
-        particle.Position.x = BBMin.x + particle.ParticleRadius + SurfaceOffset;
-        particle.Velocity.x *= -Damping;
-    }
-    else if (particle.Position.x + particle.ParticleRadius > BBMax.x)
-    {
-        particle.Position.x = BBMax.x - particle.ParticleRadius - SurfaceOffset;
-        particle.Velocity.x *= -Damping;
-    }
-
-    if (particle.Position.y - particle.ParticleRadius < BBMin.y)
-    {
-        particle.Position.y = BBMin.y + particle.ParticleRadius + SurfaceOffset;
-        particle.Velocity.y *= -Damping;
-    }
-    else if (particle.Position.y + particle.ParticleRadius > BBMax.y)
-    {
-        particle.Position.y = BBMax.y - particle.ParticleRadius - SurfaceOffset;
-        particle.Velocity.y *= -Damping;
-    }
-}
 
 [numthreads(256, 1, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
     uint i = DTid.x;
-    Particle particle = gParticles[i];
+    Particle particle = gParticlesSRV[i];
     particle.Density = CalculateDensity(i);
-    DebugParticles[i].DebugDensity = particle.Density;
-    DebugParticles[i].DebugParticleCount = ParticleCount;
-    
-    if (Pause == 1)
-    {
-        particle.PressureForce = CalculatePressureForce(i);
-        particle.Velocity += float3(0.0f, -Gravity, 0.0f) * DeltaTimeCompute;
-        particle.Velocity.xy += particle.PressureForce * DeltaTimeCompute / particle.Density;
-        particle.Position += particle.Velocity * DeltaTimeCompute;
-       
-        ResolveCollision(particle);
-
-    }
-
-    gParticles[i] = particle;
+    particle.PressureForce = CalculatePressureForce(i);
+    gParticlesUAV[i] = particle;
 }

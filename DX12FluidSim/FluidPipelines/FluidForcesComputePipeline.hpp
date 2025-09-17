@@ -57,6 +57,7 @@ public:
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesSRVGPUHandle() const { return ParticleForcesSRVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesUAVGPUHandle() const { return ParticleForcesUAVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetDebugUAVGPUHandle() const { return DebugUAVGPUHandle; }
+    ID3D12Resource2 *GetParticleForcesBuffer() const { return ParticleData.DefaultBuffer.Get(); }
 
 private:
     void CreatePipelineState(const std::vector<char> &CSCode);

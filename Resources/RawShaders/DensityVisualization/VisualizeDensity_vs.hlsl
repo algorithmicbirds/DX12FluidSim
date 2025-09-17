@@ -1,4 +1,4 @@
-#include "../ParticleSystem/Particle_cs.hlsl"
+#include "../ParticleSystem/ParticleIntegrate_cs.hlsl"
 
 cbuffer CameraBuffer : register(b0)
 {

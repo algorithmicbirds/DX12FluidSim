@@ -47,6 +47,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesForcesComputePipeline(CmdList);
+    RunParticlesIntegrateComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
     //RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
@@ -64,24 +65,74 @@ void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleForcesComputePipeline->BindRootAndPSO(CmdList);
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::TimerCB_b0, ConstantBuffersRef.GetTimerGPUVirtualAddress());
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::BoundingBoxCB_b1, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
-    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::ComputeSimParamsCB_b2, ConstantBuffersRef.GetComputeSimParamsGPUVirtualAddress());
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::TimerCB_b0, ConstantBuffersRef.GetTimerGPUVirtualAddress()
+    );
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::BoundingBoxCB_b1, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress()
+    );
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::ComputeSimParamsCB_b2, ConstantBuffersRef.GetComputeSimParamsGPUVirtualAddress()
+    );
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
+
+    D3D12_GPU_DESCRIPTOR_HANDLE ForcesSRV = bPingPong
+                                                ? ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
+                                                : ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle();
+
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleForcesUAV_u0, ParticleForcesComputePipeline->GetParticleForcesUAVGPUHandle()
     );
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::DebugUAV_t1, ParticleForcesComputePipeline->GetDebugUAVGPUHandle()
+        ComputeRootParams::DebugUAV_u1, ParticleForcesComputePipeline->GetDebugUAVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV
     );
 
     UINT ThreadGroupSize = 256;
     UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
     CmdList->Dispatch(NumGroups, 1, 1);
 
-    //ParticleComputePipeline->ReadDebugBuffer(CmdList);
+    D3D12_RESOURCE_BARRIER ForcesBR{};
+    ForcesBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    ForcesBR.UAV.pResource = ParticleForcesComputePipeline->GetParticleForcesBuffer();
+    CmdList->ResourceBarrier(1, &ForcesBR);
+    // ParticleComputePipeline->ReadDebugBuffer(CmdList);
+}
+
+void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList) {
+    ParticleIntegrateComputePipeline->BindRootAndPSO(CmdList);
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::TimerCB_b0, ConstantBuffersRef.GetTimerGPUVirtualAddress()
+    );
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::ComputeSimParamsCB_b2, ConstantBuffersRef.GetComputeSimParamsGPUVirtualAddress()
+    );
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleForcesUAV_u0, ParticleIntegrateComputePipeline->GetParticleIntegrateUAVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
+    );
+
+    
+    constexpr UINT ThreadGroupSize = 256;
+    UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
+    CmdList->Dispatch(NumGroups, 1, 1);
+
+    D3D12_RESOURCE_BARRIER IntegrateBR{};
+    IntegrateBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    IntegrateBR.UAV.pResource = ParticleIntegrateComputePipeline->GetParticleIntegrateBuffer();
+    CmdList->ResourceBarrier(1, &IntegrateBR);
+
+
+    bPingPong = !bPingPong;
 }
 
 void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -99,7 +150,7 @@ void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
-        GraphicsRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
+        GraphicsRootParams::ParticleForcesSRV_t0, ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
     );
 
     CmdList->RSSetViewports(1, &Viewport);
@@ -159,13 +210,13 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     ParticleForcesComputePipeline = std::make_unique<FluidForcesComputePipeline>(DeviceRef);
     ParticleForcesComputePipeline->SetRootSignature(CompRootSig);
     ParticleForcesComputePipeline->CreateStructuredBuffer(CmdList, ParticleCount);
-    ParticleForcesComputePipeline->CreatePipeline(SHADER_PATH "ParticleSystem/Particle_cs.cso", *FluidHeapDesc.get());
+    ParticleForcesComputePipeline->CreatePipeline(SHADER_PATH "ParticleSystem/ParticleForces_cs.cso", *FluidHeapDesc.get());
 
     ParticleIntegrateComputePipeline = std::make_unique<FluidIntegrateComputePipeline>(DeviceRef);
     ParticleIntegrateComputePipeline->SetRootSignature(CompRootSig);
     ParticleIntegrateComputePipeline->CreateStructuredBuffer(CmdList);
     ParticleIntegrateComputePipeline->CreatePipeline(
-        SHADER_PATH "ParticleSystem/Particle_cs.cso", *FluidHeapDesc.get()
+        SHADER_PATH "ParticleSystem/ParticleIntegrate_cs.cso", *FluidHeapDesc.get()
     );
 
 

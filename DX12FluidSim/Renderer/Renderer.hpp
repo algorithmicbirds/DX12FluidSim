@@ -52,6 +52,7 @@ public:
 private:
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
@@ -74,5 +75,6 @@ private:
     PrecomputedParticleGPUData ParticleBuffer;
     DebugConstants DebugConst;
 
+    bool bPingPong = false;
     //StupidDebugBuffer DebugBuffer;
 };
