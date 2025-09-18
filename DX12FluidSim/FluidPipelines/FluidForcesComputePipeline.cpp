@@ -1,4 +1,4 @@
-#include "FluidForcesComputePipeline.hpp"
+﻿#include "FluidForcesComputePipeline.hpp"
 #include "Shared/Utils.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 #include <random>
@@ -133,7 +133,7 @@ void FluidForcesComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleSt
 {
     const float boxWidth = 6.0f;
     const float boxHeight = 3.5f;
-
+    float fixedDelta = 0.008;
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> distX(-boxWidth / 2.0f, boxWidth / 2.0f);
@@ -141,13 +141,19 @@ void FluidForcesComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleSt
 
     for (UINT i = 0; i < ParticleCount; ++i)
     {
-        ParticleStructuredBuffer &p = particleData[i];
+        ParticleStructuredBuffer &Particle = particleData[i];
 
-        p.Position.x = distX(gen);
-        p.Position.y = distY(gen);
-        p.Position.z = 0.0f;
+        Particle.Position.x = distX(gen);
+        Particle.Position.y = distY(gen);
+        Particle.Position.z = 0.0f;
 
-        p.Velocity = {0.0f, 0.0f, 0.0f};
+        Particle.Velocity = {0.0f, 0.0f, 0.0f};
+
+        // initialize previous position so verlet doesnt fuck up first dispalcement
+        // x{t-Δt} = xt - vt * Δt
+        Particle.PreviousPosition.x = Particle.Position.x - Particle.Velocity.x * fixedDelta;
+        Particle.PreviousPosition.y = Particle.Position.y - Particle.Velocity.y * fixedDelta;
+        Particle.PreviousPosition.z = Particle.Position.z - Particle.Velocity.z * fixedDelta;
     }
 }
 

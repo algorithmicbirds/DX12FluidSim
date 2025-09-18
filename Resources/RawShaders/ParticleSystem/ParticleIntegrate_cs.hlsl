@@ -4,8 +4,9 @@ struct Particle
 {
     float3 Position;
     float ParticleRadius;
-    float3 Velocity;
+    float3 PreviousPosition;
     float ParticleSmoothingRadius;
+    float3 Velocity;
     float Density;
     float2 PressureForce;
     float Mass;
@@ -81,17 +82,19 @@ void ResolveCollision(inout Particle particle)
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
     uint i = DTid.x;
-    // use particle data from previous pass
     Particle particle = gParticleSRV[i];
     
     if (Pause == 1)
     {
-        particle.Velocity += float3(0.0f, -Gravity, 0.0f) * DeltaTimeCompute;
-        particle.Velocity.xy += particle.PressureForce * DeltaTimeCompute / particle.Density;
-        particle.Position += particle.Velocity * DeltaTimeCompute;
-       
+        float3 acceleration = float3(0.0f, -Gravity, 0.0f);
+        acceleration.xy += particle.PressureForce / particle.Density;
+        
+        float3 currentPos = particle.Position;
+        //Verlet Integration
+        // x_newPos = x_currentPos + (x_currentPos - x_previousPos) + a * dt^2
+        particle.Position += (particle.Position - particle.PreviousPosition) + acceleration * DeltaTimeCompute * DeltaTimeCompute;
+        particle.PreviousPosition = currentPos;
         ResolveCollision(particle);
-
     }
 
     gParticleUAV[i] = particle;
