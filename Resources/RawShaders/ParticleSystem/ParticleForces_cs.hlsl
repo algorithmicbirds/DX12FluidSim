@@ -4,7 +4,7 @@ struct Particle
 {
     float3 Position;
     float ParticleRadius;
-    float3 PreviousPosition;
+    float3 Acceleration;
     float ParticleSmoothingRadius;
     float3 Velocity;
     float Density;

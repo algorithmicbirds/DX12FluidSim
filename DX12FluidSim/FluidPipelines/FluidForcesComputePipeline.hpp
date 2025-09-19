@@ -8,7 +8,7 @@ struct ParticleStructuredBuffer
 {
     DirectX::XMFLOAT3 Position;
     float ParticleRadius = ParticleInitialValues::ParticleRadius;
-    DirectX::XMFLOAT3 PreviousPosition;
+    DirectX::XMFLOAT3 Acceleration;
     float ParticleSmoothingRadius = ParticleInitialValues::ParticleSmoothingRadius;
     DirectX::XMFLOAT3 Velocity;
     float Density = 0;

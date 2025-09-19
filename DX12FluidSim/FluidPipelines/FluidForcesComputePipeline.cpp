@@ -148,12 +148,7 @@ void FluidForcesComputePipeline::ArrangeParticlesRandomly(std::vector<ParticleSt
         Particle.Position.z = 0.0f;
 
         Particle.Velocity = {0.0f, 0.0f, 0.0f};
-
-        // initialize previous position so verlet doesnt fuck up first dispalcement
-        // x{t-Δt} = xt - vt * Δt
-        Particle.PreviousPosition.x = Particle.Position.x - Particle.Velocity.x * fixedDelta;
-        Particle.PreviousPosition.y = Particle.Position.y - Particle.Velocity.y * fixedDelta;
-        Particle.PreviousPosition.z = Particle.Position.z - Particle.Velocity.z * fixedDelta;
+        Particle.Acceleration = {0.0f, 0.0f, 0.0f};
     }
 }
 

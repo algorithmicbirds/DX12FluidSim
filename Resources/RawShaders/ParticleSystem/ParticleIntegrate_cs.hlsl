@@ -4,7 +4,7 @@ struct Particle
 {
     float3 Position;
     float ParticleRadius;
-    float3 PreviousPosition;
+    float3 Acceleration;
     float ParticleSmoothingRadius;
     float3 Velocity;
     float Density;
@@ -49,7 +49,6 @@ cbuffer PrecomputedKernalsData : register(b3)
     uint ParticleCount;
 }
 
-
 void ResolveCollision(inout Particle particle)
 {
     float SurfaceOffset = 0.001f;
@@ -78,6 +77,39 @@ void ResolveCollision(inout Particle particle)
     }
 }
 
+float CalculateSmoothingKernalPoly6(float squaredDistance)
+{
+    if (squaredDistance >= Poly6SmoothingRadiusPow2)
+        return 0.0f;
+    
+        // 4/pi h^8 (h^2 - r^2)^3
+    float polynomialWeight = Poly6SmoothingRadiusPow2 - squaredDistance;
+    return Poly6KernalConst * polynomialWeight * polynomialWeight * polynomialWeight;
+}
+
+float3 XSPHVelocityCorrection(uint particleIndex)
+{
+    Particle currentParticle = gParticleSRV[particleIndex];
+    float3 vXSPH = float3(0.0f, 0.0f, 0.0f);
+    
+    for (uint neighborIndex = 0; neighborIndex < ParticleCount; neighborIndex++)
+    {
+        if (neighborIndex == particleIndex)
+            continue;
+        Particle neighborParticle = gParticleSRV[neighborIndex];
+        
+        float3 dist = currentParticle.Position - neighborParticle.Position;
+        float distSq = dot(dist, dist);
+        
+        if (distSq > Poly6SmoothingRadiusPow2)
+            continue;
+        
+        float SmoothingKernal = CalculateSmoothingKernalPoly6(distSq);
+        vXSPH += (neighborParticle.Mass / neighborParticle.Density) * (neighborParticle.Velocity - currentParticle.Velocity) * SmoothingKernal;
+    }
+    return vXSPH;
+}
+
 [numthreads(256, 1, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
@@ -86,14 +118,15 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
     
     if (Pause == 1)
     {
-        float3 acceleration = float3(0.0f, -Gravity, 0.0f);
-        acceleration.xy += particle.PressureForce / particle.Density;
-        
-        float3 currentPos = particle.Position;
-        //Verlet Integration
-        // x_newPos = x_currentPos + (x_currentPos - x_previousPos) + a * dt^2
-        particle.Position += (particle.Position - particle.PreviousPosition) + acceleration * DeltaTimeCompute * DeltaTimeCompute;
-        particle.PreviousPosition = currentPos;
+        // velocity verlet integration
+        particle.Acceleration = float3(0.0f, -Gravity, 0.0f);
+        particle.Acceleration.xy += particle.PressureForce / particle.Density;
+        particle.Position += particle.Velocity * DeltaTimeCompute + 0.5 * particle.Acceleration * (DeltaTimeCompute * DeltaTimeCompute);
+        float3 newAcceleration = float3(0.0f, -Gravity, 0.0f);
+        newAcceleration.xy += particle.PressureForce / particle.Density;
+        particle.Velocity += 0.5 * (particle.Acceleration + newAcceleration) * DeltaTimeCompute;
+        particle.Acceleration = newAcceleration;
+        particle.Velocity += 0.05f * XSPHVelocityCorrection(i);
         ResolveCollision(particle);
     }
 
