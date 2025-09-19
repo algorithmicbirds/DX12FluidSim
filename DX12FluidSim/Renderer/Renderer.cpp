@@ -176,7 +176,7 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(_countof(Heaps), Heaps);
     CmdList->SetGraphicsRootDescriptorTable(
-        GraphicsRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
+        GraphicsRootParams::ParticleForcesSRV_t0, ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
     );
     //CmdList->SetGraphicsRootDescriptorTable(GraphicsRootParams::DebugUAV_u0, DebugBuffer.GetDebugGPUDescHandle());
     CmdList->RSSetViewports(1, &Viewport);

@@ -1,4 +1,6 @@
 #include "Window.hpp"
+#include "Icons/resource.h"
+
 #include <stdexcept>
 
 #include <imgui_impl_win32.h>
@@ -26,7 +28,12 @@ bool Window::Init()
     wcexw.style = CS_OWNDC;
     wcexw.lpfnWndProc = &Window::StaticWindowProc;
     wcexw.hInstance = GetModuleHandleW(nullptr);
-    wcexw.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    wcexw.hIcon = static_cast<HICON>(
+        LoadImageW(wcexw.hInstance, MAKEINTRESOURCEW(IDI_APPICON), IMAGE_ICON, 70, 70, LR_DEFAULTCOLOR)
+    );
+    wcexw.hIconSm = static_cast<HICON>(
+        LoadImageW(wcexw.hInstance, MAKEINTRESOURCEW(IDI_APPICON), IMAGE_ICON, 70, 70, LR_DEFAULTCOLOR)
+    );
     wcexw.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     wcexw.lpszClassName = L"D3D12ExWndClass";
 

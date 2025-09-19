@@ -1,0 +1,4 @@
+#include <winres.h>
+#include "resource.h"
+
+IDI_APPICON ICON "DX12FluidSimIcon.ico"
