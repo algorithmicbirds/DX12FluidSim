@@ -9,6 +9,7 @@
 #include "Shared/SimData.hpp"
 #include "Renderer/ConstantBuffers.hpp"
 #include "Renderer/StupidDebugBuffer.hpp"
+#include "FluidPipelines/FluidComputePipelineBase.hpp"
 
 class DXGraphicsPipeline;
 class DXSwapchain;
@@ -57,6 +58,15 @@ private:
     void RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
 
+    template <typename T>
+    std::unique_ptr<T> CreateComputePipelineInstance(
+        ID3D12Device14 &Device,
+        ComPtr<ID3D12RootSignature> RootSig,
+        ID3D12GraphicsCommandList7 *CmdList,
+        const std::string &ShaderPath,
+        FluidHeapDescriptor &HeapDesc
+    );
+
 private:
     DXSwapchain &SwapchainRef;
     ID3D12Device14 &DeviceRef;
@@ -76,5 +86,21 @@ private:
     DebugConstants DebugConst;
 
     bool bPingPong = false;
-    //StupidDebugBuffer DebugBuffer;
 };
+
+template <typename T>
+inline std::unique_ptr<T> Renderer::CreateComputePipelineInstance(
+    ID3D12Device14 &Device,
+    ComPtr<ID3D12RootSignature> RootSig,
+    ID3D12GraphicsCommandList7 *CmdList,
+    const std::string &ShaderPath,
+    FluidHeapDescriptor &HeapDesc
+)
+{
+    static_assert(std::is_base_of_v<FluidComputePipelineBase, T>, "T must derive from FluidComputePipelineBase");
+    auto Pipeline = std::make_unique<T>(Device);
+    Pipeline->SetRootSignature(RootSig);
+    Pipeline->CreateStructuredBuffer(CmdList);
+    Pipeline->CreatePipeline(ShaderPath, HeapDesc);
+    return Pipeline;
+}

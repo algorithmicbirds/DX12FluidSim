@@ -12,15 +12,9 @@ struct Particle
     float Mass;
 };
 
-struct DebugData
-{
-    float DebugDensity;
-    float DebugParticleCount;
-};
 
 RWStructuredBuffer<Particle> gParticleUAV : register(u0);
 StructuredBuffer<Particle> gParticleSRV : register(t0);
-RWStructuredBuffer<DebugData> DebugParticles : register(u1);
 
 cbuffer TimeBufferCompute : register(b0)
 {

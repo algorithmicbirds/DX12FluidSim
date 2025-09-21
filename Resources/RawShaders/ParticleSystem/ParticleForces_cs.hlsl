@@ -12,14 +12,7 @@ struct Particle
     float Mass;
 };
 
-struct DebugData
-{
-    float DebugDensity;
-    float DebugParticleCount;
-};
-
 RWStructuredBuffer<Particle> gParticlesUAV : register(u0);
-RWStructuredBuffer<DebugData> DebugParticles : register(u1);
 StructuredBuffer<Particle> gParticlesSRV : register(t1);
 
 cbuffer TimeBufferCompute : register(b0)
@@ -58,7 +51,7 @@ float2 CalculatePressureForce(uint particleIndex)
 {
     Particle currentParticle = gParticlesSRV[particleIndex];
     float RestDensity = 1000.0f;
-    float2 pressureForce = (0.0f, 0.0f);
+    float2 pressureForce = float2(0.0f, 0.0f);
     float currentPressure = StiffnessConstant * (currentParticle.Density - RestDensity);
     float radialFalloff;
     for (uint neighborIndex = 0; neighborIndex < ParticleCount; neighborIndex++)

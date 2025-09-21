@@ -2,6 +2,7 @@
 
 #include "GlobInclude/WinInclude.hpp"
 #include "Shared/SimData.hpp"
+#include "FluidPipelines/FluidComputePipelineBase.hpp"
 
 #include <vector>
 #include <string>
@@ -24,19 +25,17 @@ struct ParticleIntegrateSB
     float Mass = 1.0f;
 };
 
-class FluidIntegrateComputePipeline
+class FluidIntegrateComputePipeline : public FluidComputePipelineBase
 {
 public:
     FluidIntegrateComputePipeline(ID3D12Device14 &Device);
-    ~FluidIntegrateComputePipeline();
+    ~FluidIntegrateComputePipeline() override;
 
     FluidIntegrateComputePipeline &operator=(const FluidIntegrateComputePipeline &) = delete;
     FluidIntegrateComputePipeline(const FluidIntegrateComputePipeline &) = delete;
 
-    void CreatePipeline(const std::string &CSFilePath, class FluidHeapDescriptor &HeapDesc);
-    void BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList);
     void SetRootSignature(ComPtr<ID3D12RootSignature> InRootSig) { RootSignature = InRootSig; }
-    void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList);
+    void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList) override;
 
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleIntegrateSRVGPUHandle() const { return ParticleIntegrateSRVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleIntegrateUAVGPUHandle() const { return ParticleIntegrateUAVGPUHandle; }
@@ -44,14 +43,10 @@ public:
 
 private:
     void CreatePipelineState(const std::vector<char> &CSCode);
-    void CreateBufferDesc(class FluidHeapDescriptor &HeapDesc);
+    void CreateBufferDesc(class FluidHeapDescriptor &HeapDesc) override;
 
 private:
-    ComPtr<ID3D12RootSignature> RootSignature;
-    ComPtr<ID3D12PipelineState> PipelineStateObject;
     ParticleIntegrateGPU ParticleGPU;
-
-    ID3D12Device14 &DeviceRef;
 
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleIntegrateUAVGPUHandle{};
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleIntegrateSRVGPUHandle{};

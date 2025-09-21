@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "Shared/SimData.hpp"
+#include "FluidPipelines/FluidComputePipelineBase.hpp"
 
 struct ParticleStructuredBuffer
 {
@@ -22,19 +23,7 @@ struct ParticleGPUData
     ComPtr<ID3D12Resource2> UploadBuffer;
 };
 
-struct DebugStructuredBuffer
-{
-    float DebugDensity;
-    float DebugParticleCount;
-};
-
-struct GPUDebugResources
-{
-    ComPtr<ID3D12Resource2> DefaultBuffer;
-    ComPtr<ID3D12Resource2> ReadBackBuffer;
-};
-
-class FluidForcesComputePipeline
+class FluidForcesComputePipeline : public FluidComputePipelineBase
 {
 public:
     FluidForcesComputePipeline(ID3D12Device14 &Device);
@@ -43,39 +32,24 @@ public:
     FluidForcesComputePipeline &operator=(const FluidForcesComputePipeline &) = delete;
     FluidForcesComputePipeline(const FluidForcesComputePipeline &) = delete;
 
-    void CreatePipeline(const std::string &CSFilePath, class FluidHeapDescriptor &HeapDesc);
-    void CreateBufferDesc(class FluidHeapDescriptor &HeapDesc);
-    void BindRootAndPSO(ID3D12GraphicsCommandList7 *CmdList);
+    void CreateBufferDesc(FluidHeapDescriptor &HeapDesc) override;
+    void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList) override;
 
-    void SetRootSignature(ComPtr<ID3D12RootSignature> InRootSig) { RootSignature = InRootSig; }
-    void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList, UINT Count);
-    void ReadDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
-    void CreateDensityTexture();
     void ArrangeParticlesRandomly(std::vector<ParticleStructuredBuffer> &particleData);
     void ArrangeParticlesInSquare(std::vector<ParticleStructuredBuffer> &particleData);
-    D3D12_GPU_VIRTUAL_ADDRESS GetDensityTexGPUAddress() const { return DensityTexture->GetGPUVirtualAddress(); }
 
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesSRVGPUHandle() const { return ParticleForcesSRVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetParticleForcesUAVGPUHandle() const { return ParticleForcesUAVGPUHandle; }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetDebugUAVGPUHandle() const { return DebugUAVGPUHandle; }
     ID3D12Resource2 *GetParticleForcesBuffer() const { return ParticleData.DefaultBuffer.Get(); }
 
 private:
-    void CreatePipelineState(const std::vector<char> &CSCode);
-
-private:
-    ID3D12Device14 &DeviceRef;
-
-    UINT ParticleCount = 0;
+    const UINT ParticleCount = SimInitials::ParticleCount;
 
     ComPtr<ID3D12RootSignature> RootSignature;
     ComPtr<ID3D12PipelineState> PipelineState;
-    ComPtr<ID3D12Resource2> DensityTexture;
 
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleForcesUAVGPUHandle{};
     D3D12_GPU_DESCRIPTOR_HANDLE ParticleForcesSRVGPUHandle{};
-    D3D12_GPU_DESCRIPTOR_HANDLE DebugUAVGPUHandle{};
 
     ParticleGPUData ParticleData;
-    GPUDebugResources GPUDebugResourcesData;
 };

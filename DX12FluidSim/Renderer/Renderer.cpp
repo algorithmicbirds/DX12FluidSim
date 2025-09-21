@@ -49,7 +49,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     RunParticlesForcesComputePipeline(CmdList);
     RunParticlesIntegrateComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
-    //RunDensityVisualizationGraphicsPipeline(CmdList);
+    // RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
 
@@ -85,12 +85,8 @@ void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleForcesUAV_u0, ParticleForcesComputePipeline->GetParticleForcesUAVGPUHandle()
     );
-    CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::DebugUAV_u1, ParticleForcesComputePipeline->GetDebugUAVGPUHandle()
-    );
-    CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV
-    );
+
+    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV);
 
     UINT ThreadGroupSize = 256;
     UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
@@ -100,10 +96,10 @@ void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     ForcesBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
     ForcesBR.UAV.pResource = ParticleForcesComputePipeline->GetParticleForcesBuffer();
     CmdList->ResourceBarrier(1, &ForcesBR);
-    // ParticleComputePipeline->ReadDebugBuffer(CmdList);
 }
 
-void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList) {
+void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
     ParticleIntegrateComputePipeline->BindRootAndPSO(CmdList);
     CmdList->SetComputeRootConstantBufferView(
         ComputeRootParams::TimerCB_b0, ConstantBuffersRef.GetTimerGPUVirtualAddress()
@@ -121,7 +117,6 @@ void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *
         ComputeRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
     );
 
-    
     constexpr UINT ThreadGroupSize = 256;
     UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
     CmdList->Dispatch(NumGroups, 1, 1);
@@ -130,7 +125,6 @@ void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *
     IntegrateBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
     IntegrateBR.UAV.pResource = ParticleIntegrateComputePipeline->GetParticleIntegrateBuffer();
     CmdList->ResourceBarrier(1, &IntegrateBR);
-
 
     bPingPong = !bPingPong;
 }
@@ -178,22 +172,23 @@ void Renderer::RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList
     CmdList->SetGraphicsRootDescriptorTable(
         GraphicsRootParams::ParticleForcesSRV_t0, ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
     );
-    //CmdList->SetGraphicsRootDescriptorTable(GraphicsRootParams::DebugUAV_u0, DebugBuffer.GetDebugGPUDescHandle());
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
 
     CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     constexpr UINT ParticleVerts = 6;
     CmdList->DrawInstanced(ParticleVerts * ParticleCount, 1, 0, 0);
-
-    // DebugBuffer.ReadBackDebugBuffer(CmdList);
 }
 
 void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     BoundingBoxPipeline->BindRootAndPSO(CmdList);
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress());
-    CmdList->SetGraphicsRootConstantBufferView(GraphicsRootParams::BoundingBoxCB_b3, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress());
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::CameraCB_b0, ConstantBuffersRef.GetCameraGPUVirtualAddress()
+    );
+    CmdList->SetGraphicsRootConstantBufferView(
+        GraphicsRootParams::BoundingBoxCB_b3, ConstantBuffersRef.GetBoundingBoxGPUVirtualAddress()
+    );
     CmdList->RSSetViewports(1, &Viewport);
     CmdList->RSSetScissorRects(1, &SwapchainRef.GetScissorRect());
     constexpr UINT BoxVertices = 5;
@@ -207,18 +202,13 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 
     ComPtr<ID3D12RootSignature> CompRootSig = RootSignature::CreateComputeRootSig(DeviceRef);
 
-    ParticleForcesComputePipeline = std::make_unique<FluidForcesComputePipeline>(DeviceRef);
-    ParticleForcesComputePipeline->SetRootSignature(CompRootSig);
-    ParticleForcesComputePipeline->CreateStructuredBuffer(CmdList, ParticleCount);
-    ParticleForcesComputePipeline->CreatePipeline(SHADER_PATH "ParticleSystem/ParticleForces_cs.cso", *FluidHeapDesc.get());
-
-    ParticleIntegrateComputePipeline = std::make_unique<FluidIntegrateComputePipeline>(DeviceRef);
-    ParticleIntegrateComputePipeline->SetRootSignature(CompRootSig);
-    ParticleIntegrateComputePipeline->CreateStructuredBuffer(CmdList);
-    ParticleIntegrateComputePipeline->CreatePipeline(
-        SHADER_PATH "ParticleSystem/ParticleIntegrate_cs.cso", *FluidHeapDesc.get()
+    ParticleForcesComputePipeline = CreateComputePipelineInstance<FluidForcesComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleForces_cs.cso", *FluidHeapDesc.get()
     );
 
+    ParticleIntegrateComputePipeline = CreateComputePipelineInstance<FluidIntegrateComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleIntegrate_cs.cso", *FluidHeapDesc.get()
+    );
 
     UINT PrecompParticleCosnstBufferSize = sizeof(PrecomputedParticleConstants);
     PrecomputedParticleConstants PrecompParticleData{};
@@ -226,7 +216,7 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     const float Poly6SmoothingRadiusPow8 = pow(ParticleInitialValues::ParticleSmoothingRadius, 8);
     PrecompParticleData.Poly6SmoothingRadiusSquared = pow(ParticleInitialValues::ParticleSmoothingRadius, 2);
     PrecompParticleData.Poly6KernelConst = 4.0f / (PI * Poly6SmoothingRadiusPow8);
-    
+
     // 2d spiky graident
     const float SpikySmoothingRadPow5 = pow(ParticleInitialValues::ParticleSmoothingRadius, 5);
     PrecompParticleData.SpikyKernelConst = -(30.0f / (PI * SpikySmoothingRadPow5));
@@ -242,8 +232,5 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
         ParticleBuffer.UploadBuffer
     );
     ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress();
-    
-    //DebugBuffer.SetDescriptorHeap(ParticleComputePipeline->GetDecriptorHeapObj());
-    //DebugBuffer.CreateDebugUAVDesc(DeviceRef);
     ConstantBuffersRef.InitializeBuffers(DeviceRef);
 }
