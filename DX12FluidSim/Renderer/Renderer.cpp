@@ -9,6 +9,14 @@
 #include "Shared/RootParams.hpp"
 #include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 #include "FluidPipelines/FluidIntegrateComputePipeline.hpp"
+#include "FluidPipelines/MortonComputePipeline.hpp"
+
+#define FFX_CPU
+#define FFX_HLSL
+#include <FidelityFX/host/ffx_types.h>
+#include <FidelityFX/host/ffx_util.h>
+#include <FidelityFX/gpu/parallelsort/ffx_parallelsort.h>
+#include <FidelityFX/gpu/parallelsort/ffx_parallelsort_resources.h>
 
 #define PI 3.14159265f
 
@@ -46,6 +54,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
 {
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
+    RunParticlesMortonComputePipeline(CmdList);
     RunParticlesForcesComputePipeline(CmdList);
     RunParticlesIntegrateComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
@@ -60,6 +69,26 @@ void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->ClearRenderTargetView(SwapchainRef.GetMSAARTVHandle(), ClearColor, 0, nullptr);
     CmdList->OMSetRenderTargets(1, &SwapchainRef.GetMSAARTVHandle(), FALSE, &SwapchainRef.GetMSAADSVHandle());
     CmdList->ClearDepthStencilView(SwapchainRef.GetMSAADSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+}
+
+void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
+    ParticleMortonComputePipeline->BindRootAndPSO(CmdList);
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
+
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleForcesUAV_u0, ParticleForcesComputePipeline->GetParticleForcesUAVGPUHandle()
+    );
+    
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleMortonUAV_u1, ParticleMortonComputePipeline->GetMortonUAVGPUHandle()
+    );
+    
+
+    UINT ThreadGroupSize = 256;
+    UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
+    CmdList->Dispatch(NumGroups, 1, 1);
 }
 
 void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -209,6 +238,16 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     ParticleIntegrateComputePipeline = CreateComputePipelineInstance<FluidIntegrateComputePipeline>(
         DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleIntegrate_cs.cso", *FluidHeapDesc.get()
     );
+
+    ParticleMortonComputePipeline = CreateComputePipelineInstance<MortonComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleMorton_cs.cso", *FluidHeapDesc.get()
+    );
+    
+    uint32_t NumKeys = ParticleCount;
+    uint32_t ScratchSize = 0;
+    uint32_t ReduceScratchSize = 0;
+    ffxParallelSortCalculateScratchResourceSize(NumKeys, ScratchSize, ReduceScratchSize);
+    std::cout << "Scratch Size: " << ScratchSize << " Reduce Scratch Size: " << ReduceScratchSize << "\n";
 
     UINT PrecompParticleCosnstBufferSize = sizeof(PrecomputedParticleConstants);
     PrecomputedParticleConstants PrecompParticleData{};

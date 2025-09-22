@@ -16,6 +16,7 @@ class DXSwapchain;
 class FluidForcesComputePipeline;
 class FluidIntegrateComputePipeline;
 class FluidHeapDescriptor;
+class MortonComputePipeline;
 
 struct PrecomputedParticleGPUData
 {
@@ -52,6 +53,7 @@ public:
 
 private:
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
@@ -77,6 +79,7 @@ private:
     std::unique_ptr<DXGraphicsPipeline> BoundingBoxPipeline;
     std::unique_ptr<FluidForcesComputePipeline> ParticleForcesComputePipeline;
     std::unique_ptr<FluidIntegrateComputePipeline> ParticleIntegrateComputePipeline;
+    std::unique_ptr<MortonComputePipeline> ParticleMortonComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
     std::unique_ptr<FluidHeapDescriptor> FluidHeapDesc;

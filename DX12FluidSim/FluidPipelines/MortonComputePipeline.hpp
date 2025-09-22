@@ -18,27 +18,27 @@ struct GridGPUResources
     ComPtr<ID3D12Resource2> UploadBuffer;
 };
 
-class GridComputePipeline : public FluidComputePipelineBase
+class MortonComputePipeline : public FluidComputePipelineBase
 {
 public:
-    GridComputePipeline(ID3D12Device14 &Device);
-    ~GridComputePipeline();
+    MortonComputePipeline(ID3D12Device14 &Device);
+    ~MortonComputePipeline();
 
-    GridComputePipeline &operator=(const GridComputePipeline &) = delete;
-    GridComputePipeline(const GridComputePipeline &) = delete;
+    MortonComputePipeline &operator=(const MortonComputePipeline &) = delete;
+    MortonComputePipeline(const MortonComputePipeline &) = delete;
 
 public:
     virtual void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList) override;
     ID3D12Resource2 *GetParticleIntegrateBuffer() const { return GridGPU.DefaultBuffer.Get(); }
     virtual void CreateBufferDesc(FluidHeapDescriptor &HeapDesc) override;
 
-    D3D12_GPU_DESCRIPTOR_HANDLE GetGridUAVGPUHandle() const { return GridUAVGPUHandle; }
-    D3D12_GPU_DESCRIPTOR_HANDLE GetGridSRVGPUHandle() const { return GridSRVGPUHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetMortonUAVGPUHandle() const { return MortonUAVGPUHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetMortonSRVGPUHandle() const { return MortonSRVGPUHandle; }
 
 private:
     GridGPUResources GridGPU;
     UINT ParticleCount = SimInitials::ParticleCount;
 
-    D3D12_GPU_DESCRIPTOR_HANDLE GridUAVGPUHandle{};
-    D3D12_GPU_DESCRIPTOR_HANDLE GridSRVGPUHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE MortonUAVGPUHandle{};
+    D3D12_GPU_DESCRIPTOR_HANDLE MortonSRVGPUHandle{};
 };

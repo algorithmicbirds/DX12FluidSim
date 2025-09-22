@@ -1,12 +1,12 @@
-#include "GridComputePipeline.hpp"
+#include "FluidPipelines/MortonComputePipeline.hpp"
 #include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 #include "DebugLayer/DebugMacros.hpp"
 
-GridComputePipeline::GridComputePipeline(ID3D12Device14 &Device) : FluidComputePipelineBase(Device) {}
+MortonComputePipeline::MortonComputePipeline(ID3D12Device14 &Device) : FluidComputePipelineBase(Device) {}
 
-GridComputePipeline::~GridComputePipeline() = default;
+MortonComputePipeline::~MortonComputePipeline() = default;
 
-void GridComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList)
+void MortonComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList)
 {
     UINT StructuredBufferSize = sizeof(GridSB) * ParticleCount;
     std::vector<GridSB> particleData(ParticleCount);
@@ -22,11 +22,11 @@ void GridComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *Cmd
     );
 }
 
-void GridComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
+void MortonComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
 {
-    GridUAVGPUHandle =
+    MortonUAVGPUHandle =
         HeapDesc.AllocateDescriptor(DescriptorType::UAV, GridGPU.DefaultBuffer, ParticleCount, sizeof(GridSB));
 
-    GridSRVGPUHandle =
+    MortonSRVGPUHandle =
         HeapDesc.AllocateDescriptor(DescriptorType::SRV, GridGPU.DefaultBuffer, ParticleCount, sizeof(GridSB));
 }

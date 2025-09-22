@@ -12,7 +12,7 @@ public:
     FluidHeapDescriptor(ID3D12Device14 &Device) : DeviceRef(Device)
     {
         D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
-        HeapDesc.NumDescriptors = 5;
+        HeapDesc.NumDescriptors = 7;
         HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         DX_VALIDATE(Device.CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DescriptorHeap)), DescriptorHeap);
