@@ -10,13 +10,7 @@
 #include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 #include "FluidPipelines/FluidIntegrateComputePipeline.hpp"
 #include "FluidPipelines/MortonComputePipeline.hpp"
-
-#define FFX_CPU
-#define FFX_HLSL
-#include <FidelityFX/host/ffx_types.h>
-#include <FidelityFX/host/ffx_util.h>
-#include <FidelityFX/gpu/parallelsort/ffx_parallelsort.h>
-#include <FidelityFX/gpu/parallelsort/ffx_parallelsort_resources.h>
+#include "FluidPipelines/BitonicSortComputePipeline.hpp"
 
 #define PI 3.14159265f
 
@@ -55,10 +49,11 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesMortonComputePipeline(CmdList);
+    RunParticlesSortomputePipeline(CmdList);
     RunParticlesForcesComputePipeline(CmdList);
     RunParticlesIntegrateComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
-    // RunDensityVisualizationGraphicsPipeline(CmdList);
+    //RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
 
@@ -77,18 +72,36 @@ void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
 
-    CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticleForcesUAV_u0, ParticleForcesComputePipeline->GetParticleForcesUAVGPUHandle()
-    );
-    
+    D3D12_GPU_DESCRIPTOR_HANDLE MortonSRV = bPingPong
+                                                ? ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
+                                                : ParticleMortonComputePipeline->GetMortonSRVGPUHandle();
+
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleMortonUAV_u1, ParticleMortonComputePipeline->GetMortonUAVGPUHandle()
     );
-    
 
-    UINT ThreadGroupSize = 256;
-    UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
-    CmdList->Dispatch(NumGroups, 1, 1);
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticlePrevPositionsSRV_t1, MortonSRV
+    );
+
+    DispatchComputeWithBarrier(CmdList, ParticleMortonComputePipeline->GetMortonBuffer());
+}
+
+void Renderer::RunParticlesSortomputePipeline(ID3D12GraphicsCommandList7 *CmdList) {
+    ParticleSortComputePipeline->BindRootAndPSO(CmdList);
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
+
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleMortonSRV_t2, ParticleMortonComputePipeline->GetMortonSRVGPUHandle()
+    );
+
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleSortUAV_u2, ParticleSortComputePipeline->GetBitonicSortUAVGPUHandle()
+    );
+
+    
+    DispatchComputeWithBarrier(CmdList, ParticleSortComputePipeline->GetBitonicBuffer());
 }
 
 void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -116,15 +129,7 @@ void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     );
 
     CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV);
-
-    UINT ThreadGroupSize = 256;
-    UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
-    CmdList->Dispatch(NumGroups, 1, 1);
-
-    D3D12_RESOURCE_BARRIER ForcesBR{};
-    ForcesBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-    ForcesBR.UAV.pResource = ParticleForcesComputePipeline->GetParticleForcesBuffer();
-    CmdList->ResourceBarrier(1, &ForcesBR);
+    DispatchComputeWithBarrier(CmdList, ParticleForcesComputePipeline->GetParticleForcesBuffer());
 }
 
 void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -146,16 +151,20 @@ void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *
         ComputeRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
     );
 
-    constexpr UINT ThreadGroupSize = 256;
+    DispatchComputeWithBarrier(CmdList, ParticleIntegrateComputePipeline->GetParticleIntegrateBuffer());
+    bPingPong = !bPingPong;
+}
+
+void Renderer::DispatchComputeWithBarrier(ID3D12GraphicsCommandList7 *CmdList, ID3D12Resource2 *Buffer)
+{
+    UINT ThreadGroupSize = 256;
     UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
     CmdList->Dispatch(NumGroups, 1, 1);
 
-    D3D12_RESOURCE_BARRIER IntegrateBR{};
-    IntegrateBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-    IntegrateBR.UAV.pResource = ParticleIntegrateComputePipeline->GetParticleIntegrateBuffer();
-    CmdList->ResourceBarrier(1, &IntegrateBR);
-
-    bPingPong = !bPingPong;
+    D3D12_RESOURCE_BARRIER Barrier{};
+    Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    Barrier.UAV.pResource = Buffer;
+    CmdList->ResourceBarrier(1, &Barrier);
 }
 
 void Renderer::RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -225,30 +234,10 @@ void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdLis
     CmdList->DrawInstanced(BoxVertices, 1, 0, 0);
 }
 
+
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
-    FluidHeapDesc = std::make_unique<FluidHeapDescriptor>(DeviceRef);
-
-    ComPtr<ID3D12RootSignature> CompRootSig = RootSignature::CreateComputeRootSig(DeviceRef);
-
-    ParticleForcesComputePipeline = CreateComputePipelineInstance<FluidForcesComputePipeline>(
-        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleForces_cs.cso", *FluidHeapDesc.get()
-    );
-
-    ParticleIntegrateComputePipeline = CreateComputePipelineInstance<FluidIntegrateComputePipeline>(
-        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleIntegrate_cs.cso", *FluidHeapDesc.get()
-    );
-
-    ParticleMortonComputePipeline = CreateComputePipelineInstance<MortonComputePipeline>(
-        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleMorton_cs.cso", *FluidHeapDesc.get()
-    );
-    
-    uint32_t NumKeys = ParticleCount;
-    uint32_t ScratchSize = 0;
-    uint32_t ReduceScratchSize = 0;
-    ffxParallelSortCalculateScratchResourceSize(NumKeys, ScratchSize, ReduceScratchSize);
-    std::cout << "Scratch Size: " << ScratchSize << " Reduce Scratch Size: " << ReduceScratchSize << "\n";
-
+    InitalizeComputePipelines(CmdList);
     UINT PrecompParticleCosnstBufferSize = sizeof(PrecomputedParticleConstants);
     PrecomputedParticleConstants PrecompParticleData{};
     // calculates 2d kernal poly6
@@ -272,4 +261,26 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     );
     ParticleBuffer.GPUAddress = ParticleBuffer.DefaultBuffer->GetGPUVirtualAddress();
     ConstantBuffersRef.InitializeBuffers(DeviceRef);
+}
+
+void Renderer::InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList) {
+    FluidHeapDesc = std::make_unique<FluidHeapDescriptor>(DeviceRef);
+
+    ComPtr<ID3D12RootSignature> CompRootSig = RootSignature::CreateComputeRootSig(DeviceRef);
+
+    ParticleForcesComputePipeline = CreateComputePipelineInstance<FluidForcesComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleForces_cs.cso", *FluidHeapDesc.get()
+    );
+
+    ParticleIntegrateComputePipeline = CreateComputePipelineInstance<FluidIntegrateComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleIntegrate_cs.cso", *FluidHeapDesc.get()
+    );
+
+    ParticleMortonComputePipeline = CreateComputePipelineInstance<MortonComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleMorton_cs.cso", *FluidHeapDesc.get()
+    );
+    
+    ParticleSortComputePipeline = CreateComputePipelineInstance<BitonicSortComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/BitonicSort_cs.cso", *FluidHeapDesc.get()
+    );
 }

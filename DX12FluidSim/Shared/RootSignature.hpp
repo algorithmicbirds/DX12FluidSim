@@ -35,11 +35,14 @@ inline D3D12_DESCRIPTOR_RANGE1 CreateRange(
     Range.Flags = Flags;
     return Range;
 }
-inline D3D12_ROOT_PARAMETER1
-CreateTableParam(D3D12_DESCRIPTOR_RANGE1 &Range, D3D12_SHADER_VISIBILITY ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL)
+inline D3D12_ROOT_PARAMETER1 CreateTableParam(
+    D3D12_DESCRIPTOR_RANGE1 &Range,
+    D3D12_SHADER_VISIBILITY ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
+    UINT NumDescriptorRanges = 1u
+)
 {
     D3D12_ROOT_DESCRIPTOR_TABLE1 Table = {};
-    Table.NumDescriptorRanges = 1;
+    Table.NumDescriptorRanges = NumDescriptorRanges;
     Table.pDescriptorRanges = &Range;
 
     D3D12_ROOT_PARAMETER1 Param{};

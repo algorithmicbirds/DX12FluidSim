@@ -7,21 +7,28 @@ namespace RootSignature
 {
 ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
 {
-    D3D12_DESCRIPTOR_RANGE1 ParticleRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0);
-    D3D12_DESCRIPTOR_RANGE1 ParticleMortonRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1);
-    D3D12_DESCRIPTOR_RANGE1 ParticleIntegrateRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0);
-    D3D12_DESCRIPTOR_RANGE1 ParticlePrevPositionsRange = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1);
+    D3D12_DESCRIPTOR_RANGE1 ParticleRangeUAV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0);
+    D3D12_DESCRIPTOR_RANGE1 ParticleMortonRangeUAV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1);
+    D3D12_DESCRIPTOR_RANGE1 ParticleSortRangeUAV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 2);
 
-    D3D12_ROOT_PARAMETER1 RootParam[8] = {};
+    D3D12_DESCRIPTOR_RANGE1 ParticleIntegrateRangeSRV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0);
+    D3D12_DESCRIPTOR_RANGE1 ParticlePrevPositionsRangeSRV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1);
+    D3D12_DESCRIPTOR_RANGE1 ParticleMortonRangeSRV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2);
+
+    D3D12_ROOT_PARAMETER1 RootParam[10] = {};
 
     RootParam[ComputeRootParams::TimerCB_b0] = CreateCBV(0);
     RootParam[ComputeRootParams::BoundingBoxCB_b1] = CreateCBV(1);
     RootParam[ComputeRootParams::ComputeSimParamsCB_b2] = CreateCBV(2);
     RootParam[ComputeRootParams::PrecomputedKernalCB_b3] = CreateCBV(3);
-    RootParam[ComputeRootParams::ParticleForcesUAV_u0] = CreateTableParam(ParticleRange);
-    RootParam[ComputeRootParams::ParticleMortonUAV_u1] = CreateTableParam(ParticleMortonRange);
-    RootParam[ComputeRootParams::ParticleForcesSRV_t0] = CreateTableParam(ParticleIntegrateRange);
-    RootParam[ComputeRootParams::ParticlePrevPositionsSRV_t1] = CreateTableParam(ParticlePrevPositionsRange);
+
+    RootParam[ComputeRootParams::ParticleForcesUAV_u0] = CreateTableParam(ParticleRangeUAV);
+    RootParam[ComputeRootParams::ParticleMortonUAV_u1] = CreateTableParam(ParticleMortonRangeUAV);
+    RootParam[ComputeRootParams::ParticleSortUAV_u2] = CreateTableParam(ParticleSortRangeUAV);
+
+    RootParam[ComputeRootParams::ParticleForcesSRV_t0] = CreateTableParam(ParticleIntegrateRangeSRV);
+    RootParam[ComputeRootParams::ParticlePrevPositionsSRV_t1] = CreateTableParam(ParticlePrevPositionsRangeSRV);
+    RootParam[ComputeRootParams::ParticleMortonSRV_t2] = CreateTableParam(ParticleMortonRangeSRV);
 
     ComPtr<ID3D12RootSignature> RootSig;
     RootSig = CreateRootSig(Device, RootParam, _countof(RootParam));

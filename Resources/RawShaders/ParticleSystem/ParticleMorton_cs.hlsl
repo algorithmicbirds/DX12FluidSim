@@ -4,7 +4,7 @@ struct Particle
     float3 Position;
 };
 
-RWStructuredBuffer<Particle> gParticle : register(u0);
+StructuredBuffer<Particle> gParticle : register(t1);
 RWStructuredBuffer<uint> gMortonCode : register(u1);
 
 // ExpandCoordinateBits function adapted from Sean Eron Anderson, "Bit Twiddling Hacks" (public domain)

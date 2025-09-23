@@ -30,30 +30,6 @@ set(IMGUI_BACKENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/External/imgui/backends/imgui_impl_win32.cpp"
 )
 
-set(FFX_SDK "F:/FidelityFX-SDK-v1.1.4/sdk")
-
-include_directories(
-    ${FFX_SDK}/include
-    ${FFX_SDK}/src/shared
-    ${FFX_SDK}/src/backends/dx12
-    ${FFX_SDK}/src/backends/shared 
-    ${FFX_SDK}/src/components/parallelsort
-    ${FFX_SDK}/libs
-)
-
-
-set(FFX_SOURCES
-    ${FFX_SDK}/src/components/parallelsort/ffx_parallelsort.cpp
-    ${FFX_SDK}/src/shared/ffx_assert.cpp
-    ${FFX_SDK}/src/shared/ffx_breadcrumbs_list.cpp
-    ${FFX_SDK}/src/shared/ffx_message.cpp
-    ${FFX_SDK}/src/shared/ffx_object_management.cpp
-    ${FFX_SDK}/src/backends/dx12/ffx_dx12.cpp
-)
-
-
-add_library(ffx_parallelsort ${FFX_SOURCES})
-
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/DX12FluidSim/*.cpp"
 )

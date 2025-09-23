@@ -17,6 +17,7 @@ class FluidForcesComputePipeline;
 class FluidIntegrateComputePipeline;
 class FluidHeapDescriptor;
 class MortonComputePipeline;
+class BitonicSortComputePipeline;
 
 struct PrecomputedParticleGPUData
 {
@@ -54,11 +55,14 @@ public:
 private:
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesSortomputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void DispatchComputeWithBarrier(ID3D12GraphicsCommandList7 *CmdList, ID3D12Resource2 *Buffer);
     void RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList);
 
     template <typename T>
     std::unique_ptr<T> CreateComputePipelineInstance(
@@ -80,6 +84,7 @@ private:
     std::unique_ptr<FluidForcesComputePipeline> ParticleForcesComputePipeline;
     std::unique_ptr<FluidIntegrateComputePipeline> ParticleIntegrateComputePipeline;
     std::unique_ptr<MortonComputePipeline> ParticleMortonComputePipeline;
+    std::unique_ptr<BitonicSortComputePipeline> ParticleSortComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
     std::unique_ptr<FluidHeapDescriptor> FluidHeapDesc;

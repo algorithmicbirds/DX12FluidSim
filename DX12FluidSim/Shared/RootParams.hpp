@@ -19,6 +19,8 @@ constexpr UINT ComputeSimParamsCB_b2 = 2;
 constexpr UINT PrecomputedKernalCB_b3 = 3;
 constexpr UINT ParticleForcesUAV_u0 = 4;
 constexpr UINT ParticleMortonUAV_u1 = 5;
-constexpr UINT ParticleForcesSRV_t0 = 6;
-constexpr UINT ParticlePrevPositionsSRV_t1 = 7;
+constexpr UINT ParticleSortUAV_u2 = 6;
+constexpr UINT ParticleForcesSRV_t0 = 7;
+constexpr UINT ParticlePrevPositionsSRV_t1 = 8;
+constexpr UINT ParticleMortonSRV_t2 = 9;
 } // namespace ComputeRootParams
