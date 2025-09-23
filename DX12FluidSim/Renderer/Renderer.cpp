@@ -73,17 +73,15 @@ void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
 
-    D3D12_GPU_DESCRIPTOR_HANDLE MortonSRV = bPingPong
-                                                ? ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
-                                                : ParticleMortonComputePipeline->GetMortonSRVGPUHandle();
-
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticlePrevPositionsSRV_t1,
+        ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
+    );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleMortonUAV_u1, ParticleMortonComputePipeline->GetMortonUAVGPUHandle()
     );
 
-    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, MortonSRV);
-
-    DispatchComputeWithBarrier(CmdList, ParticleMortonComputePipeline->GetMortonUAVBuffer());
+    DispatchComputeWithBarrier(CmdList, ParticleMortonComputePipeline->GetMortonBuffer());
 }
 
 void Renderer::RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdList)

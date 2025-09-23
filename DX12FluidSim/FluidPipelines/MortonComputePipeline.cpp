@@ -8,25 +8,16 @@ MortonComputePipeline::~MortonComputePipeline() = default;
 
 void MortonComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList)
 {
+    UINT StructuredBufferSize = sizeof(UINT) * ParticleCount;
+    std::vector<UINT> particleData(ParticleCount);
 
-    std::vector<MortonSB> SRVParticleData(ParticleCount);
     Utils::CreateUploadBuffer(
         DeviceRef,
         CmdList,
-        sizeof(MortonSB) * ParticleCount,
-        SRVParticleData.data(),
-        MortonSRVGPU.DefaultBuffer,
-        MortonSRVGPU.UploadBuffer
-    );
-
-    std::vector<UINT> UAVParticleData(ParticleCount);
-     Utils::CreateUploadBuffer(
-        DeviceRef,
-        CmdList,
-        sizeof(UINT) * ParticleCount,
-        UAVParticleData.data(),
-        MortonUAVGPU.DefaultBuffer,
-        MortonUAVGPU.UploadBuffer,
+        StructuredBufferSize,
+        particleData.data(),
+        MortonGPU.DefaultBuffer,
+        MortonGPU.UploadBuffer,
         D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
     );
 }
@@ -34,8 +25,8 @@ void MortonComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *C
 void MortonComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
 {
     MortonUAVGPUHandle =
-        HeapDesc.AllocateDescriptor(DescriptorType::UAV, MortonUAVGPU.DefaultBuffer, ParticleCount, sizeof(UINT));
+        HeapDesc.AllocateDescriptor(DescriptorType::UAV, MortonGPU.DefaultBuffer, ParticleCount, sizeof(UINT));
 
     MortonSRVGPUHandle =
-        HeapDesc.AllocateDescriptor(DescriptorType::SRV, MortonSRVGPU.DefaultBuffer, ParticleCount, sizeof(MortonSB));
+        HeapDesc.AllocateDescriptor(DescriptorType::SRV, MortonGPU.DefaultBuffer, ParticleCount, sizeof(UINT));
 }
