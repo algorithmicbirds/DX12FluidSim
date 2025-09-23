@@ -92,13 +92,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             {
                 Window.FullScreenFlipFlop();
             }
-            if (Window.KeyPressed(0x41))
+            if (Window.KeyPressed(VK_SPACE))
             {
-                printf("A pressed\n");
-            }
-            if (Window.KeyPressed(0x57))
-            {
-                printf("W pressed\n");
+                ui.RenderUIFlipFlop();
             }
             Window.ResetKeyBoardState();
 

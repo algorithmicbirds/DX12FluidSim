@@ -83,7 +83,7 @@ void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *Cmd
 
     CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, MortonSRV);
 
-    DispatchComputeWithBarrier(CmdList, ParticleMortonComputePipeline->GetMortonBuffer());
+    DispatchComputeWithBarrier(CmdList, ParticleMortonComputePipeline->GetMortonUAVBuffer());
 }
 
 void Renderer::RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdList)

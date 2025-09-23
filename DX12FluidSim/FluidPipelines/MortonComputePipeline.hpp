@@ -33,10 +33,11 @@ public:
 
     D3D12_GPU_DESCRIPTOR_HANDLE GetMortonUAVGPUHandle() const { return MortonUAVGPUHandle; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetMortonSRVGPUHandle() const { return MortonSRVGPUHandle; }
-    ID3D12Resource2 *GetMortonBuffer() const { return MortonGPU.DefaultBuffer.Get(); }
+    ID3D12Resource2 *GetMortonUAVBuffer() const { return MortonUAVGPU.DefaultBuffer.Get(); }
 
 private:
-    MortonGPUResources MortonGPU;
+    MortonGPUResources MortonSRVGPU;
+    MortonGPUResources MortonUAVGPU;
     UINT ParticleCount = SimInitials::ParticleCount;
 
     D3D12_GPU_DESCRIPTOR_HANDLE MortonUAVGPUHandle{};

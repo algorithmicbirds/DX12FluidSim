@@ -21,6 +21,7 @@ public:
     Nano::Signal<void(UINT)> OnPauseToggled;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleBaseColorChanged;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleGlowColorChanged;
+    void RenderUIFlipFlop() { bRenderUI = !bRenderUI; }
 
 private:
     void InitializeImGUI();
@@ -30,4 +31,5 @@ private:
     HWND &HwndRef;
     DXSwapchain &SwapchainRef;
     ComPtr<ID3D12DescriptorHeap> ImguiHeap;
+    bool bRenderUI = true;
 };

@@ -2,13 +2,7 @@
 
 #include "FluidPipelines/FluidComputePipelineBase.hpp"
 
-struct CellStartGPU
-{
-    ComPtr<ID3D12Resource2> DefaultBuffer;
-    ComPtr<ID3D12Resource2> UploadBuffer;
-};
-
-struct CellEndGPU
+struct GridGPUResources
 {
     ComPtr<ID3D12Resource2> DefaultBuffer;
     ComPtr<ID3D12Resource2> UploadBuffer;
@@ -38,8 +32,8 @@ public:
     ID3D12Resource2 *GetCellEndBuffer() const { return CellEndGPUResources.DefaultBuffer.Get(); }
 
 private:
-    CellStartGPU CellStartGPUResources;
-    CellEndGPU CellEndGPUResources;
+    GridGPUResources CellStartGPUResources;
+    GridGPUResources CellEndGPUResources;
 
     D3D12_GPU_DESCRIPTOR_HANDLE CellStartUAVGPUHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE CellStartSRVGPUHandle;

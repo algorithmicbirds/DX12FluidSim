@@ -71,6 +71,10 @@ void UI::NewFrame()
 
 void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
 {
+    if (!bRenderUI)
+    {
+        return;
+    }
     NewFrame();
 
     ID3D12DescriptorHeap *heaps[] = {ImguiHeap.Get()};
@@ -116,7 +120,7 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 200.0f))
     {
         OnStifnessConstantChanged.fire(StiffnessConstant);
-    }
+    } 
     if (ImGui::Button(pause ? "Pause" : "Play"))
     {
         pause ^= 1;
