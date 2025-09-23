@@ -2,6 +2,12 @@
 
 #include "FluidPipelines/FluidComputePipelineBase.hpp"
 
+struct SortedMortonData
+{
+    UINT MortonCode;
+    UINT ParticleIndex;
+};
+
 struct BitonicSortGPU
 {
     ComPtr<ID3D12Resource2> DefaultBuffer;

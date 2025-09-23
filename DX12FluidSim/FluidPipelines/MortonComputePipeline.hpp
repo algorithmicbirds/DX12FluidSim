@@ -7,6 +7,12 @@
 #include <string>
 #include <vector>
 
+struct MortonData
+{
+    UINT MortonCode;
+    UINT ParticleIndex;
+};
+
 struct MortonGPUResources
 {
     ComPtr<ID3D12Resource2> DefaultBuffer;

@@ -51,6 +51,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ClearFrame(CmdList);
     RunParticlesMortonComputePipeline(CmdList);
     RunParticlesSortComputePipeline(CmdList);
+    RunParticleGridComputePipeline(CmdList);
     RunParticlesForcesComputePipeline(CmdList);
     RunParticlesIntegrateComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
@@ -70,13 +71,16 @@ void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
 void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleMortonComputePipeline->BindRootAndPSO(CmdList);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
+    
+    D3D12_GPU_DESCRIPTOR_HANDLE ForcesSRV = bPingPong
+                                                ? ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
+                                                : ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle();
 
-    CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticlePrevPositionsSRV_t1,
-        ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
-    );
+    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV);
+
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleMortonUAV_u1, ParticleMortonComputePipeline->GetMortonUAVGPUHandle()
     );
@@ -87,6 +91,7 @@ void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *Cmd
 void Renderer::RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleSortComputePipeline->BindRootAndPSO(CmdList);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
 
@@ -155,9 +160,20 @@ void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleForcesUAV_u0, ParticleForcesComputePipeline->GetParticleForcesUAVGPUHandle()
     );
+    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::DebugUAV_u5, DebugBuffer.GetDebugGPUDescHandle());
 
     CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV);
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::SortedMortonSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::CellStartSRV_t4, ParticleGridComputePipeline->GetCellStartSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::CellEndSRV_t5, ParticleGridComputePipeline->GetCellEndSRVGPUHandle()
+    );
     DispatchComputeWithBarrier(CmdList, ParticleForcesComputePipeline->GetParticleForcesBuffer());
+    //DebugBuffer.ReadBackDebugBuffer(CmdList);
 }
 
 void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -177,6 +193,15 @@ void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *
     );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::SortedMortonSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::CellStartSRV_t4, ParticleGridComputePipeline->GetCellStartSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::CellEndSRV_t5, ParticleGridComputePipeline->GetCellEndSRVGPUHandle()
     );
 
     DispatchComputeWithBarrier(CmdList, ParticleIntegrateComputePipeline->GetParticleIntegrateBuffer());
@@ -277,6 +302,8 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     PrecompParticleData.SpikyKernelConst = -(30.0f / (PI * SpikySmoothingRadPow5));
 
     PrecompParticleData.ParticleCount = ParticleCount;
+    PrecompParticleData.GridCellSize = SimInitials::GridCellSize;
+    PrecompParticleData.HashTableSize = SimInitials::HashTableSize;
     // creates global data that is shared between both pipelines
     Utils::CreateUploadBuffer(
         DeviceRef,
@@ -313,6 +340,8 @@ void Renderer::InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList)
     );
 
     ParticleGridComputePipeline = CreateComputePipelineInstance<BuildGridComputePipeline>(
-        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/BitonicSort_cs.cso", *FluidHeapDesc.get()
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleGrid_cs.cso", *FluidHeapDesc.get()
     );
+
+    DebugBuffer.CreateDebugUAVDesc(DeviceRef, *FluidHeapDesc.get());
 }

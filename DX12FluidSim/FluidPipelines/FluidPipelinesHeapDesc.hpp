@@ -12,7 +12,7 @@ public:
     FluidHeapDescriptor(ID3D12Device14 &Device) : DeviceRef(Device)
     {
         D3D12_DESCRIPTOR_HEAP_DESC HeapDesc{};
-        HeapDesc.NumDescriptors = 13;
+        HeapDesc.NumDescriptors = 14;
         HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         DX_VALIDATE(Device.CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DescriptorHeap)), DescriptorHeap);
@@ -21,7 +21,6 @@ public:
     inline D3D12_GPU_DESCRIPTOR_HANDLE
     AllocateDescriptor(DescriptorType DescType, ComPtr<ID3D12Resource2> DefaultBuffer, UINT NumOfElems, UINT Stride)
     {
-
         D3D12_GPU_DESCRIPTOR_HANDLE Desc = Utils::CreateBufferDescriptor(
             DeviceRef, DescType, DefaultBuffer, DescriptorHeap, NumOfElems, Stride, NextIndex
         );

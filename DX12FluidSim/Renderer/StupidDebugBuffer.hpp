@@ -2,6 +2,7 @@
 
 #include "GlobInclude/WinInclude.hpp"
 #include "Shared/SimData.hpp"
+#include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 
 struct PixelGPUDebugResources
 {
@@ -18,15 +19,12 @@ class StupidDebugBuffer
 {
 public:
     void ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList);
-    void CreateDebugUAVDesc(ID3D12Device14 &Device);
+    void CreateDebugUAVDesc(ID3D12Device14 &Device, FluidHeapDescriptor &HeapDesc);
     D3D12_GPU_DESCRIPTOR_HANDLE GetDebugGPUDescHandle() const { return DebugGPUDescHandle; }
-    void SetDescriptorHeap(ComPtr<ID3D12DescriptorHeap> DescHeap) { DebugDescHeap = DescHeap; }
 
 private:
     PixelGPUDebugResources GPUDebug;
     UINT ParticleCount = SimInitials::ParticleCount;
-
-    ComPtr<ID3D12DescriptorHeap> DebugDescHeap;
 
     D3D12_GPU_DESCRIPTOR_HANDLE DebugGPUDescHandle;
 };

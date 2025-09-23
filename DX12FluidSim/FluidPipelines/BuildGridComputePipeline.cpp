@@ -5,8 +5,8 @@ BuildGridComputePipeline::BuildGridComputePipeline(ID3D12Device14 &Device) : Flu
 
 void BuildGridComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList)
 {
-    UINT StructuredBufferSize = sizeof(UINT) * SimInitials::ParticleCount;
-    std::vector<UINT> Data(SimInitials::ParticleCount);
+    UINT StructuredBufferSize = sizeof(UINT) * SimInitials::HashTableSize;
+    std::vector<UINT> Data(SimInitials::HashTableSize, 0xFFFFFFFF);
 
     Utils::CreateUploadBuffer(
         DeviceRef,
@@ -31,19 +31,19 @@ void BuildGridComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7
 
 void BuildGridComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
 {
-    CellStartSRVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::UAV, CellStartGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(UINT)
+    CellStartUAVGPUHandle = HeapDesc.AllocateDescriptor(
+        DescriptorType::UAV, CellStartGPUResources.DefaultBuffer, SimInitials::HashTableSize, sizeof(UINT)
     );
 
     CellStartSRVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::SRV, CellStartGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(UINT)
+        DescriptorType::SRV, CellStartGPUResources.DefaultBuffer, SimInitials::HashTableSize, sizeof(UINT)
     );
 
     CellEndUAVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::UAV, CellEndGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(UINT)
+        DescriptorType::UAV, CellEndGPUResources.DefaultBuffer, SimInitials::HashTableSize, sizeof(UINT)
     );
 
     CellEndSRVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::SRV, CellEndGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(UINT)
+        DescriptorType::SRV, CellEndGPUResources.DefaultBuffer, SimInitials::HashTableSize, sizeof(UINT)
     );
 }

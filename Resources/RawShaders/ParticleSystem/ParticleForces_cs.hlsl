@@ -1,6 +1,6 @@
 #define PI 3.14159265f
 
-struct Particle
+struct FluidParticle
 {
     float3 Position;
     float ParticleRadius;
@@ -12,96 +12,156 @@ struct Particle
     float Mass;
 };
 
-RWStructuredBuffer<Particle> gParticlesUAV : register(u0);
-StructuredBuffer<Particle> gParticlesSRV : register(t1);
-
-cbuffer TimeBufferCompute : register(b0)
+struct DebugParticleData
 {
-    float DeltaTimeCompute;
+    float Density;
+};
+
+RWStructuredBuffer<FluidParticle> ParticlesOutputBuffer : register(u0);
+RWStructuredBuffer<DebugParticleData> ParticlesDebugBuffer : register(u5);
+StructuredBuffer<FluidParticle> ParticlesInputBuffer : register(t1);
+
+struct ParticleCellHashData
+{
+    uint CellHashValue;
+    uint ParticleIndex;
+};
+
+StructuredBuffer<ParticleCellHashData> SortedParticleHashes : register(t3);
+StructuredBuffer<uint> GridCellStartIndices : register(t4);
+StructuredBuffer<uint> GridCellEndIndices : register(t5);
+
+cbuffer TimeStepData : register(b0)
+{
+    float DeltaTime;
 }
 
-cbuffer SimControls : register(b2)
+cbuffer SimulationControlParameters : register(b2)
 {
     float Gravity;
-    float Damping;
-    float StiffnessConstant;
-    int Pause;
+    float VelocityDamping;
+    float PressureStiffnessConstant;
+    int SimulationPaused;
 }
 
-cbuffer PrecomputedKernalsData : register(b3)
+cbuffer PrecomputedKernelParameters : register(b3)
 {
-    float Poly6SmoothingRadiusPow2;
-    float Poly6KernalConst;
-    float SpikyKernalConst;
-    uint ParticleCount;
+    float Poly6KernelSmoothingRadiusSquared;
+    float Poly6KernelCoefficient;
+    float SpikyKernelCoefficient;
+    uint TotalParticleCount;
+    uint SpatialHashTableSize;
+    float GridCellSize;
 }
 
-
-float CalculateSmoothingKernalPoly6(float squaredDistance)
+uint Compute2DSpatialHash(int2 cellCoordinates)
 {
-    if (squaredDistance >= Poly6SmoothingRadiusPow2)
+    const uint primeX = 73856093;
+    const uint primeY = 19349663;
+    uint hashValue = ((uint) cellCoordinates.x * primeX) ^ ((uint) cellCoordinates.y * primeY);
+    return hashValue % SpatialHashTableSize;
+}
+
+float CalculatePoly6SmoothingKernel(float squaredDistance)
+{
+    if (squaredDistance >= Poly6KernelSmoothingRadiusSquared)
         return 0.0f;
-    
-        // 4/pi h^8 (h^2 - r^2)^3
-    float polynomialWeight = Poly6SmoothingRadiusPow2 - squaredDistance;
-    return Poly6KernalConst * polynomialWeight * polynomialWeight * polynomialWeight;
+
+    float weightPolynomial = Poly6KernelSmoothingRadiusSquared - squaredDistance;
+    return Poly6KernelCoefficient * weightPolynomial * weightPolynomial * weightPolynomial;
 }
 
-float2 CalculatePressureForce(uint particleIndex)
+float ComputeParticleDensity(uint particleIndex)
 {
-    Particle currentParticle = gParticlesSRV[particleIndex];
-    float RestDensity = 1000.0f;
-    float2 pressureForce = float2(0.0f, 0.0f);
-    float currentPressure = StiffnessConstant * (currentParticle.Density - RestDensity);
-    float radialFalloff;
-    for (uint neighborIndex = 0; neighborIndex < ParticleCount; neighborIndex++)
-    {
-        if (neighborIndex == particleIndex)
-            continue;
-        Particle neigborParticle = gParticlesSRV[neighborIndex];
-        
-        float2 direction = currentParticle.Position.xy - neigborParticle.Position.xy;
-        float distsq = dot(direction, direction);
-        float neigborPressure = StiffnessConstant * (neigborParticle.Density - RestDensity);
-        
-        if (distsq == 0 || distsq >= currentParticle.ParticleSmoothingRadius * currentParticle.ParticleSmoothingRadius)
-            continue;
-        
-        float distance = sqrt(distsq);
-        
-            // (h-r)^2
-        float radialFalloff = (currentParticle.ParticleSmoothingRadius - distance);
-        radialFalloff *= radialFalloff;
-            // spiky
-            // -(30.0f / (PI * h^5)) * (h-r)^2 * r/|r|
-        float2 gradientContrib = SpikyKernalConst * radialFalloff * (direction / distance);
-        pressureForce += -neigborParticle.Mass * (currentPressure + neigborPressure) / (2 * neigborParticle.Density) * gradientContrib;
-    }
-    
-    return pressureForce;
-}
-
-float CalculateDensity(uint particleIndex)
-{
+    FluidParticle particle = ParticlesInputBuffer[particleIndex];
+    float2 particlePosition2D = particle.Position.xy;
     float density = 0.0f;
-    Particle currentParticle = gParticlesSRV[particleIndex];
-    for (uint neighborIndex = 0; neighborIndex < ParticleCount; neighborIndex++)
+
+    int2 particleCellCoordinates = int2(floor(particlePosition2D.x / GridCellSize), floor(particlePosition2D.y / GridCellSize));
+
+    for (int yOffset = -1; yOffset <= 1; ++yOffset)
     {
-        float2 distanceBetweenParticle = currentParticle.Position.xy - gParticlesSRV[neighborIndex].Position.xy;
-        float distSquared = dot(distanceBetweenParticle, distanceBetweenParticle);
-        float Influnce = CalculateSmoothingKernalPoly6(distSquared);
-        density += gParticlesSRV[neighborIndex].Mass * Influnce;
+        for (int xOffset = -1; xOffset <= 1; ++xOffset)
+        {
+            int2 neighborCellCoordinates = particleCellCoordinates + int2(xOffset, yOffset);
+            uint neighborCellHash = Compute2DSpatialHash(neighborCellCoordinates);
+            uint startIndex = GridCellStartIndices[neighborCellHash];
+            uint endIndex = GridCellEndIndices[neighborCellHash];
+            if (startIndex >= endIndex)
+                continue;
+
+            for (uint neighborIndexInCell = startIndex; neighborIndexInCell < endIndex; ++neighborIndexInCell)
+            {
+                FluidParticle neighborParticle = ParticlesInputBuffer[SortedParticleHashes[neighborIndexInCell].ParticleIndex];
+                float2 directionVector = particlePosition2D - neighborParticle.Position.xy;
+                float distanceSquared = dot(directionVector, directionVector);
+                if (distanceSquared >= particle.ParticleSmoothingRadius * particle.ParticleSmoothingRadius)
+                    continue;
+                density += neighborParticle.Mass * CalculatePoly6SmoothingKernel(distanceSquared);
+            }
+        }
     }
+
     return density;
 }
 
+float2 ComputeParticlePressureForce(uint particleIndex)
+{
+    FluidParticle particle = ParticlesInputBuffer[particleIndex];
+    float2 particlePosition2D = particle.Position.xy;
+    float2 pressureForce = float2(0.0f, 0.0f);
+    float restDensity = 1000.0f;
+    float particlePressure = PressureStiffnessConstant * (particle.Density - restDensity);
+
+    int2 particleCellCoordinates = int2(floor(particlePosition2D.x / GridCellSize), floor(particlePosition2D.y / GridCellSize));
+
+    for (int yOffset = -1; yOffset <= 1; ++yOffset)
+    {
+        for (int xOffset = -1; xOffset <= 1; ++xOffset)
+        {
+            int2 neighborCellCoordinates = particleCellCoordinates + int2(xOffset, yOffset);
+            uint neighborCellHash = Compute2DSpatialHash(neighborCellCoordinates);
+            uint startIndex = GridCellStartIndices[neighborCellHash];
+            uint endIndex = GridCellEndIndices[neighborCellHash];
+            if (startIndex >= endIndex)
+                continue;
+
+            for (uint neighborIndexInCell = startIndex; neighborIndexInCell < endIndex; ++neighborIndexInCell)
+            {
+                uint neighborParticleIndex = SortedParticleHashes[neighborIndexInCell].ParticleIndex;
+                if (neighborParticleIndex == particleIndex)
+                    continue;
+
+                FluidParticle neighborParticle = ParticlesInputBuffer[neighborParticleIndex];
+                float2 directionVector = particlePosition2D - neighborParticle.Position.xy;
+                float distanceSquared = dot(directionVector, directionVector);
+                if (distanceSquared >= particle.ParticleSmoothingRadius * particle.ParticleSmoothingRadius || distanceSquared == 0.0f)
+                    continue;
+
+                float distance = sqrt(distanceSquared);
+                float neighborPressure = PressureStiffnessConstant * (neighborParticle.Density - restDensity);
+                float radialFalloff = (particle.ParticleSmoothingRadius - distance);
+                radialFalloff *= radialFalloff;
+                float2 gradientVector = SpikyKernelCoefficient * radialFalloff * (directionVector / distance);
+
+                pressureForce += -neighborParticle.Mass * (particlePressure + neighborPressure) / (2.0f * neighborParticle.Density) * gradientVector;
+            }
+        }
+    }
+
+    return pressureForce;
+}
 
 [numthreads(256, 1, 1)]
-void CSMain(uint3 DTid : SV_DispatchThreadID)
+void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    uint i = DTid.x;
-    Particle particle = gParticlesSRV[i];
-    particle.Density = CalculateDensity(i);
-    particle.PressureForce = CalculatePressureForce(i);
-    gParticlesUAV[i] = particle;
+    uint particleIndex = dispatchThreadID.x;
+    if (particleIndex >= TotalParticleCount)
+        return;
+
+    FluidParticle particle = ParticlesInputBuffer[particleIndex];
+    particle.Density = ComputeParticleDensity(particleIndex);
+    ParticlesDebugBuffer[particleIndex].Density = particle.Density;
+    particle.PressureForce = ComputeParticlePressureForce(particleIndex);
+    ParticlesOutputBuffer[particleIndex] = particle;
 }

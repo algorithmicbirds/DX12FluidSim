@@ -15,6 +15,9 @@ struct Particle
 
 RWStructuredBuffer<Particle> gParticleUAV : register(u0);
 StructuredBuffer<Particle> gParticleSRV : register(t0);
+StructuredBuffer<uint> SortedMortonKeys : register(t3);
+StructuredBuffer<uint> CellStart : register(t4);
+StructuredBuffer<uint> CellEnd : register(t5);
 
 cbuffer TimeBufferCompute : register(b0)
 {

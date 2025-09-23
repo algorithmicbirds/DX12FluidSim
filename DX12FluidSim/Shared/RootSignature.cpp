@@ -12,6 +12,7 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     D3D12_DESCRIPTOR_RANGE1 ParticleSortRangeUAV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 2);
     D3D12_DESCRIPTOR_RANGE1 CellStartRangeUAV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 3);
     D3D12_DESCRIPTOR_RANGE1 CellEndRangeUAV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 4);
+    D3D12_DESCRIPTOR_RANGE1 DebugRangeUAV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 5);
 
     D3D12_DESCRIPTOR_RANGE1 ParticleIntegrateRangeSRV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0);
     D3D12_DESCRIPTOR_RANGE1 ParticlePrevPositionsRangeSRV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1);
@@ -21,7 +22,7 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     D3D12_DESCRIPTOR_RANGE1 CellEndRangeSRV = CreateRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5);
 
 
-    D3D12_ROOT_PARAMETER1 RootParam[15] = {};
+    D3D12_ROOT_PARAMETER1 RootParam[16] = {};
 
     RootParam[ComputeRootParams::TimerCB_b0] = CreateCBV(0);
     RootParam[ComputeRootParams::BoundingBoxCB_b1] = CreateCBV(1);
@@ -33,6 +34,7 @@ ComPtr<ID3D12RootSignature> CreateComputeRootSig(ID3D12Device14 &Device)
     RootParam[ComputeRootParams::ParticleSortUAV_u2] = CreateTableParam(ParticleSortRangeUAV);
     RootParam[ComputeRootParams::CellStartUAV_u3] = CreateTableParam(CellStartRangeUAV);
     RootParam[ComputeRootParams::CellEndUAV_u4] = CreateTableParam(CellEndRangeUAV);
+    RootParam[ComputeRootParams::DebugUAV_u5] = CreateTableParam(DebugRangeUAV);
 
     RootParam[ComputeRootParams::ParticleForcesSRV_t0] = CreateTableParam(ParticleIntegrateRangeSRV);
     RootParam[ComputeRootParams::ParticlePrevPositionsSRV_t1] = CreateTableParam(ParticlePrevPositionsRangeSRV);

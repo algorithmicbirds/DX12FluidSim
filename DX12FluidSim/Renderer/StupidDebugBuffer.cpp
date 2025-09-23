@@ -28,7 +28,7 @@ void StupidDebugBuffer::ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
     GPUDebug.ReadBackBuffer->Unmap(0, nullptr);
 }
 
-void StupidDebugBuffer::CreateDebugUAVDesc(ID3D12Device14 &Device)
+void StupidDebugBuffer::CreateDebugUAVDesc(ID3D12Device14 &Device, FluidHeapDescriptor &HeapDesc)
 {
     UINT DebugBufSize = sizeof(PixelDebugStructuredBuffer) * ParticleCount;
     GPUDebug.DefaultBuffer = Utils::CreateBuffer(
@@ -42,13 +42,8 @@ void StupidDebugBuffer::CreateDebugUAVDesc(ID3D12Device14 &Device)
     GPUDebug.ReadBackBuffer =
         Utils::CreateBuffer(Device, DebugBufSize, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST);
 
-    DebugGPUDescHandle = Utils::CreateBufferDescriptor(
-        Device,
-        DescriptorType::UAV,
-        GPUDebug.DefaultBuffer,
-        DebugDescHeap,
-        ParticleCount,
-        sizeof(PixelDebugStructuredBuffer),
-        5
+
+    DebugGPUDescHandle = HeapDesc.AllocateDescriptor(
+        DescriptorType::UAV, GPUDebug.DefaultBuffer, ParticleCount, sizeof(PixelDebugStructuredBuffer)
     );
 }

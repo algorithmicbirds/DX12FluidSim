@@ -33,11 +33,8 @@ struct PrecomputedParticleConstants
     float Poly6KernelConst;
     float SpikyKernelConst;
     UINT ParticleCount;
-};
-
-struct DebugConstants
-{
-    float Density;
+    UINT HashTableSize;
+    UINT GridCellSize ;
 };
 
 class Renderer
@@ -94,7 +91,8 @@ private:
 
     UINT ParticleCount = SimInitials::ParticleCount;
     PrecomputedParticleGPUData ParticleBuffer;
-    DebugConstants DebugConst;
+
+    StupidDebugBuffer DebugBuffer;
 
     bool bPingPong = false;
 };

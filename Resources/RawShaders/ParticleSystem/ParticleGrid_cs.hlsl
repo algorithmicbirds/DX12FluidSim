@@ -1,8 +1,12 @@
+struct ParticleHashData
+{
+    uint CellHash;
+    uint ParticleIndex;
+};
 
-StructuredBuffer<uint> SortedMortonKeys : register(t3);
+StructuredBuffer<ParticleHashData> SortedHashKeys : register(t3);
 RWStructuredBuffer<uint> CellStart : register(u3);
 RWStructuredBuffer<uint> CellEnd : register(u4);
-
 
 cbuffer PrecomputedKernalsData : register(b3)
 {
@@ -10,8 +14,9 @@ cbuffer PrecomputedKernalsData : register(b3)
     float Poly6KernalConst;
     float SpikyKernalConst;
     uint ParticleCount;
+    uint HashTableSize;
+    float GridCellSize;
 }
-
 
 [numthreads(256, 1, 1)]
 void CSMain(uint DTid : SV_DispatchThreadID)
@@ -19,25 +24,21 @@ void CSMain(uint DTid : SV_DispatchThreadID)
     uint particleIndex = DTid.x;
     if (particleIndex >= ParticleCount)
         return;
-    
-    uint MortonKey = SortedMortonKeys[particleIndex];
-    if(particleIndex == 0)
+
+    uint currentHellHash = SortedHashKeys[particleIndex].CellHash;
+    uint previousCellHash = (particleIndex > 0) ? SortedHashKeys[particleIndex - 1].CellHash : 0xFFFFFFFF;
+
+    if (particleIndex == 0 || previousCellHash != currentHellHash)
     {
-        CellStart[MortonKey] = 0;
-    }
-    else
-    {
-        uint previousMortonKey = SortedMortonKeys[particleIndex - 1];
-        
-        if(previousMortonKey != MortonKey)
+        CellStart[currentHellHash] = particleIndex;
+        if (particleIndex > 0)
         {
-            CellStart[MortonKey] = particleIndex;
-            CellEnd[previousMortonKey] = particleIndex;
+            CellEnd[previousCellHash] = particleIndex;
         }
     }
-    
-    if(particleIndex == ParticleCount - 1)
+
+    if (particleIndex == ParticleCount - 1)
     {
-        CellEnd[MortonKey] = ParticleCount;
+        CellEnd[currentHellHash] = ParticleCount;
     }
 }

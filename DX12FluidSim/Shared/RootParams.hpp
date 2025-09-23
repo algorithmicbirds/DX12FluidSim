@@ -30,4 +30,5 @@ constexpr UINT ParticleMortonSRV_t2 = 11;
 constexpr UINT SortedMortonSRV_t3 = 12;
 constexpr UINT CellStartSRV_t4 = 13;
 constexpr UINT CellEndSRV_t5 = 14;
+constexpr UINT DebugUAV_u5 = 15;
 } // namespace ComputeRootParams
