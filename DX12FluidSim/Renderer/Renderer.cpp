@@ -11,6 +11,7 @@
 #include "FluidPipelines/FluidIntegrateComputePipeline.hpp"
 #include "FluidPipelines/MortonComputePipeline.hpp"
 #include "FluidPipelines/BitonicSortComputePipeline.hpp"
+#include "FluidPipelines/BuildGridComputePipeline.hpp"
 
 #define PI 3.14159265f
 
@@ -49,11 +50,11 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
     RunParticlesMortonComputePipeline(CmdList);
-    RunParticlesSortomputePipeline(CmdList);
+    RunParticlesSortComputePipeline(CmdList);
     RunParticlesForcesComputePipeline(CmdList);
     RunParticlesIntegrateComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
-    //RunDensityVisualizationGraphicsPipeline(CmdList);
+    // RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
 
@@ -80,14 +81,13 @@ void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *Cmd
         ComputeRootParams::ParticleMortonUAV_u1, ParticleMortonComputePipeline->GetMortonUAVGPUHandle()
     );
 
-    CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticlePrevPositionsSRV_t1, MortonSRV
-    );
+    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, MortonSRV);
 
     DispatchComputeWithBarrier(CmdList, ParticleMortonComputePipeline->GetMortonBuffer());
 }
 
-void Renderer::RunParticlesSortomputePipeline(ID3D12GraphicsCommandList7 *CmdList) {
+void Renderer::RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
     ParticleSortComputePipeline->BindRootAndPSO(CmdList);
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
@@ -100,8 +100,38 @@ void Renderer::RunParticlesSortomputePipeline(ID3D12GraphicsCommandList7 *CmdLis
         ComputeRootParams::ParticleSortUAV_u2, ParticleSortComputePipeline->GetBitonicSortUAVGPUHandle()
     );
 
-    
     DispatchComputeWithBarrier(CmdList, ParticleSortComputePipeline->GetBitonicBuffer());
+}
+
+void Renderer::RunParticleGridComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
+    ParticleGridComputePipeline->BindRootAndPSO(CmdList);
+    CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::SortedMortonSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::CellStartUAV_u3, ParticleGridComputePipeline->GetCellStartUAVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::CellEndUAV_u4, ParticleGridComputePipeline->GetCellEndUAVGPUHandle()
+    );
+
+    UINT ThreadGroupSize = 256;
+    UINT NumGroups = (ParticleCount + ThreadGroupSize - 1) / ThreadGroupSize;
+    CmdList->Dispatch(NumGroups, 1, 1);
+
+    D3D12_RESOURCE_BARRIER CellStartBR{};
+    CellStartBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    CellStartBR.UAV.pResource = ParticleGridComputePipeline->GetCellStartBuffer();
+    CmdList->ResourceBarrier(1, &CellStartBR);
+
+    D3D12_RESOURCE_BARRIER CellEndBR{};
+    CellEndBR.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    CellEndBR.UAV.pResource = ParticleGridComputePipeline->GetCellEndBuffer();
+    CmdList->ResourceBarrier(1, &CellEndBR);
 }
 
 void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -234,7 +264,6 @@ void Renderer::RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdLis
     CmdList->DrawInstanced(BoxVertices, 1, 0, 0);
 }
 
-
 void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
 {
     InitalizeComputePipelines(CmdList);
@@ -263,7 +292,8 @@ void Renderer::InitializeBuffers(ID3D12GraphicsCommandList7 *CmdList)
     ConstantBuffersRef.InitializeBuffers(DeviceRef);
 }
 
-void Renderer::InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList) {
+void Renderer::InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList)
+{
     FluidHeapDesc = std::make_unique<FluidHeapDescriptor>(DeviceRef);
 
     ComPtr<ID3D12RootSignature> CompRootSig = RootSignature::CreateComputeRootSig(DeviceRef);
@@ -279,8 +309,12 @@ void Renderer::InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList) {
     ParticleMortonComputePipeline = CreateComputePipelineInstance<MortonComputePipeline>(
         DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleMorton_cs.cso", *FluidHeapDesc.get()
     );
-    
+
     ParticleSortComputePipeline = CreateComputePipelineInstance<BitonicSortComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/BitonicSort_cs.cso", *FluidHeapDesc.get()
+    );
+
+    ParticleGridComputePipeline = CreateComputePipelineInstance<BuildGridComputePipeline>(
         DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/BitonicSort_cs.cso", *FluidHeapDesc.get()
     );
 }

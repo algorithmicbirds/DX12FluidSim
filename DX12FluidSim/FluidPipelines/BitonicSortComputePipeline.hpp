@@ -2,11 +2,6 @@
 
 #include "FluidPipelines/FluidComputePipelineBase.hpp"
 
-struct BitonicSortSB
-{
-    uint32_t Key;
-};
-
 struct BitonicSortGPU
 {
     ComPtr<ID3D12Resource2> DefaultBuffer;

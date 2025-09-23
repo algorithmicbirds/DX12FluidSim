@@ -113,7 +113,7 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     {
         OnCollisionDampingChanged.fire(collisionDamping);
     }
-    if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 1.0f))
+    if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 200.0f))
     {
         OnStifnessConstantChanged.fire(StiffnessConstant);
     }

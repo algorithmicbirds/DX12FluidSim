@@ -6,8 +6,8 @@ BitonicSortComputePipeline::BitonicSortComputePipeline(ID3D12Device14 &Device) :
 void BitonicSortComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList)
 {
 
-    UINT StructuredBufferSize = sizeof(BitonicSortSB) * SimInitials::ParticleCount;
-    std::vector<BitonicSortSB> Data(SimInitials::ParticleCount);
+    UINT StructuredBufferSize = sizeof(UINT) * SimInitials::ParticleCount;
+    std::vector<UINT> Data(SimInitials::ParticleCount);
 
     Utils::CreateUploadBuffer(
         DeviceRef,
@@ -23,10 +23,10 @@ void BitonicSortComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandLis
 void BitonicSortComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
 {
     BitonicSortUAVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::UAV, BitonicSortGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(BitonicSortSB)
+        DescriptorType::UAV, BitonicSortGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(UINT)
     );
 
     BitonicSortSRVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::SRV, BitonicSortGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(BitonicSortSB)
+        DescriptorType::SRV, BitonicSortGPUResources.DefaultBuffer, SimInitials::ParticleCount, sizeof(UINT)
     );
 }

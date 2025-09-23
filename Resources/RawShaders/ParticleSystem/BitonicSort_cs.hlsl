@@ -1,11 +1,6 @@
 
-struct Keys
-{
-    uint Key;
-};
-
-RWStructuredBuffer<Keys> OutputSortedKeys : register(u2);
-StructuredBuffer<Keys> InputKeys : register(t2);
+RWStructuredBuffer<uint> OutputSortedKeys : register(u2);
+StructuredBuffer<uint> InputKeys : register(t2);
 
 groupshared uint sharedKeys[256];
 
@@ -14,7 +9,7 @@ void CSMain(uint DTid : SV_DispatchThreadID)
 {
     uint particleIndex = DTid.x;
     
-    sharedKeys[particleIndex] = InputKeys[particleIndex].Key;
+    sharedKeys[particleIndex] = InputKeys[particleIndex];
     GroupMemoryBarrierWithGroupSync();
     
     for (uint sequenceLength = 2; sequenceLength <= 256; sequenceLength <<= 1)
@@ -38,5 +33,5 @@ void CSMain(uint DTid : SV_DispatchThreadID)
         GroupMemoryBarrierWithGroupSync();
     }   
     
-    OutputSortedKeys[particleIndex].Key = sharedKeys[particleIndex];
+    OutputSortedKeys[particleIndex] = sharedKeys[particleIndex];
 }
