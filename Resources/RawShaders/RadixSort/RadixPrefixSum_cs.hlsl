@@ -11,14 +11,16 @@ cbuffer RadixParams : register(b4)
 groupshared uint temp[256];
 
 [numthreads(256, 1, 1)]
-void CSMain(uint tid : SV_GroupThreadID) 
-    uint NumBins = 256;
+void CSMain(uint tid : SV_DispatchThreadID)
+{
+    uint index = tid;
+    uint NumBins = 256; 
 
-    temp[tid] = (tid < NumBins) ? gHistogram[tid] : 0;
+    temp[tid] = (index < NumBins) ? gHistogram[index] : 0;
     GroupMemoryBarrierWithGroupSync();
 
     uint offset = 1;
-    for (uint d = NumBins >> 1; d > 0; d >>= 1)
+    for (uint d = 256 >> 1; d > 0; d >>= 1)
     {
         GroupMemoryBarrierWithGroupSync();
         if (tid < d)
@@ -30,10 +32,11 @@ void CSMain(uint tid : SV_GroupThreadID)
         offset <<= 1;
     }
 
-    if (tid == 0)
-        temp[NumBins - 1] = 0;
 
-    for (uint d = 1; d < NumBins; d <<= 1)
+    if (tid == 0)
+        temp[255] = 0;
+
+    for (uint d = 1; d < 256; d <<= 1)
     {
         offset >>= 1;
         GroupMemoryBarrierWithGroupSync();
@@ -48,6 +51,6 @@ void CSMain(uint tid : SV_GroupThreadID)
     }
     GroupMemoryBarrierWithGroupSync();
 
-    if (tid < NumBins)
-        gPrefixSum[tid] = temp[tid];
+    if (index < NumBins)
+        gPrefixSum[index] = temp[tid];
 }
