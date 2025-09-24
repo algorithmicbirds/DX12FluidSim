@@ -12,13 +12,7 @@ struct FluidParticle
     float Mass;
 };
 
-struct DebugParticleData
-{
-    float Density;
-};
-
 RWStructuredBuffer<FluidParticle> ParticlesOutputBuffer : register(u0);
-RWStructuredBuffer<DebugParticleData> ParticlesDebugBuffer : register(u5);
 StructuredBuffer<FluidParticle> ParticlesInputBuffer : register(t1);
 
 struct ParticleCellHashData
@@ -27,7 +21,7 @@ struct ParticleCellHashData
     uint ParticleIndex;
 };
 
-StructuredBuffer<ParticleCellHashData> SortedParticleHashes : register(t3);
+StructuredBuffer<ParticleCellHashData> SortedParticleHashes : register(t8);
 StructuredBuffer<uint> GridCellStartIndices : register(t4);
 StructuredBuffer<uint> GridCellEndIndices : register(t5);
 
@@ -161,7 +155,6 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 
     FluidParticle particle = ParticlesInputBuffer[particleIndex];
     particle.Density = ComputeParticleDensity(particleIndex);
-    ParticlesDebugBuffer[particleIndex].Density = particle.Density;
     particle.PressureForce = ComputeParticlePressureForce(particleIndex);
     ParticlesOutputBuffer[particleIndex] = particle;
 }

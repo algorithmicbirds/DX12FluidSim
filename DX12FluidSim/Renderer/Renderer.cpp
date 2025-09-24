@@ -9,9 +9,12 @@
 #include "Shared/RootParams.hpp"
 #include "FluidPipelines/FluidPipelinesHeapDesc.hpp"
 #include "FluidPipelines/FluidIntegrateComputePipeline.hpp"
-#include "FluidPipelines/MortonComputePipeline.hpp"
+#include "FluidPipelines/HashComputePipeline.hpp"
 #include "FluidPipelines/BitonicSortComputePipeline.hpp"
 #include "FluidPipelines/BuildGridComputePipeline.hpp"
+#include "FluidPipelines/RadixHistogramComputePipeline.hpp"
+#include "FluidPipelines/RadixPrefixSumComputePipeline.hpp"
+#include "FluidPipelines/RadixScatterComputePipeline.hpp"
 
 #define PI 3.14159265f
 
@@ -49,8 +52,11 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
 {
     ConstantBuffersRef.UpdatePerFrameData(DeltaTime);
     ClearFrame(CmdList);
-    RunParticlesMortonComputePipeline(CmdList);
-    RunParticlesSortComputePipeline(CmdList);
+    RunParticlesHashComputePipeline(CmdList);
+    //RunParticlesSortComputePipeline(CmdList);
+    RunParticleRadixHistogramComputePipeline(CmdList);
+    RunParticleRadixPrefixSumComputePipeline(CmdList);
+    RunParticleRadixScatterComputePipeline(CmdList);
     RunParticleGridComputePipeline(CmdList);
     RunParticlesForcesComputePipeline(CmdList);
     RunParticlesIntegrateComputePipeline(CmdList);
@@ -68,13 +74,13 @@ void Renderer::ClearFrame(ID3D12GraphicsCommandList7 *CmdList)
     CmdList->ClearDepthStencilView(SwapchainRef.GetMSAADSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
 
-void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+void Renderer::RunParticlesHashComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
-    ParticleMortonComputePipeline->BindRootAndPSO(CmdList);
+    ParticleHashComputePipeline->BindRootAndPSO(CmdList);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
-    
+
     D3D12_GPU_DESCRIPTOR_HANDLE ForcesSRV = bPingPong
                                                 ? ParticleIntegrateComputePipeline->GetParticleIntegrateSRVGPUHandle()
                                                 : ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle();
@@ -82,10 +88,10 @@ void Renderer::RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV);
 
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticleMortonUAV_u1, ParticleMortonComputePipeline->GetMortonUAVGPUHandle()
+        ComputeRootParams::ParticleHashUAV_u1, ParticleHashComputePipeline->GetHashUAVGPUHandle()
     );
 
-    DispatchComputeWithBarrier(CmdList, ParticleMortonComputePipeline->GetMortonBuffer());
+    DispatchComputeWithBarrier(CmdList, ParticleHashComputePipeline->GetHashBuffer());
 }
 
 void Renderer::RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -96,7 +102,7 @@ void Renderer::RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdLi
     CmdList->SetDescriptorHeaps(1, Heaps);
 
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::ParticleMortonSRV_t2, ParticleMortonComputePipeline->GetMortonSRVGPUHandle()
+        ComputeRootParams::ParticleHashSRV_t2, ParticleHashComputePipeline->GetHashSRVGPUHandle()
     );
 
     CmdList->SetComputeRootDescriptorTable(
@@ -106,14 +112,82 @@ void Renderer::RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdLi
     DispatchComputeWithBarrier(CmdList, ParticleSortComputePipeline->GetBitonicBuffer());
 }
 
+void Renderer::RunParticleRadixHistogramComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
+    ParticleRadixHistogram->BindRootAndPSO(CmdList);
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::RadixHistogram_b4, ParticleRadixHistogram->GetRadixHistogramCB()
+    );
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleHashSRV_t2, ParticleHashComputePipeline->GetHashSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::RadixHistogramUAV_u5, ParticleRadixHistogram->GetRadixHistogramUAVGPUHandle()
+    );
+    DispatchComputeWithBarrier(CmdList, ParticleRadixHistogram->GetRadixHistogramBuffer());
+}
+
+void Renderer::RunParticleRadixPrefixSumComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
+{
+    ParticleRadixPrefixSum->BindRootAndPSO(CmdList);
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::RadixHistogram_b4, ParticleRadixHistogram->GetRadixHistogramCB()
+    );
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::RadixHistogramSRV_t6, ParticleRadixHistogram->GetRadixHistogramSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::RadixPrefixSumUAV_u6, ParticleRadixPrefixSum->GetRadixPrefixSumUAVGPUHandle()
+    );
+
+    UINT ThreadGroupSize = 256;
+    UINT NumGroups = (ParticleRadixHistogram->NumBins + ThreadGroupSize - 1) / ThreadGroupSize;
+    CmdList->Dispatch(NumGroups, 1, 1);
+
+    D3D12_RESOURCE_BARRIER Barrier{};
+    Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    Barrier.UAV.pResource = ParticleRadixPrefixSum->GetRadixPrefixSumBuffer();
+    CmdList->ResourceBarrier(1, &Barrier);
+}
+
+void Renderer::RunParticleRadixScatterComputePipeline(ID3D12GraphicsCommandList7 *CmdList) {
+    ParticleRadixScatter->BindRootAndPSO(CmdList);
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::RadixHistogram_b4, ParticleRadixHistogram->GetRadixHistogramCB()
+    );
+    ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
+    CmdList->SetDescriptorHeaps(1, Heaps);
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::ParticleHashSRV_t2, ParticleHashComputePipeline->GetHashSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::RadixPrefixSumSRV_t7, ParticleRadixPrefixSum->GetRadixPrefixSumSRVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::RadixScatterUAV_u7, ParticleRadixScatter->GetRadixScatterUAVGPUHandle()
+    );
+    CmdList->SetComputeRootDescriptorTable(
+        ComputeRootParams::RadixScatterBinOffsetsUAV_u8, ParticleRadixScatter->GetRadixScatterBinOffsetsSRVGPUHandle()
+    );
+
+    DispatchComputeWithBarrier(CmdList, ParticleRadixScatter->GetRadixScatterBuffer());
+}
+
 void Renderer::RunParticleGridComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
 {
     ParticleGridComputePipeline->BindRootAndPSO(CmdList);
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
+    //CmdList->SetComputeRootDescriptorTable(
+    //    ComputeRootParams::SortedHashSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
+    //);
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::SortedMortonSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
+        ComputeRootParams::RadixScatterSRV_t8, ParticleRadixScatter->GetRadixScatterSRVGPUHandle()
     );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::CellStartUAV_u3, ParticleGridComputePipeline->GetCellStartUAVGPUHandle()
@@ -160,11 +234,13 @@ void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *Cmd
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleForcesUAV_u0, ParticleForcesComputePipeline->GetParticleForcesUAVGPUHandle()
     );
-    CmdList->SetComputeRootDescriptorTable(ComputeRootParams::DebugUAV_u5, DebugBuffer.GetDebugGPUDescHandle());
 
     CmdList->SetComputeRootDescriptorTable(ComputeRootParams::ParticlePrevPositionsSRV_t1, ForcesSRV);
+        //CmdList->SetComputeRootDescriptorTable(
+        //    ComputeRootParams::SortedHashSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
+        //);
     CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::SortedMortonSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
+        ComputeRootParams::RadixScatterSRV_t8, ParticleRadixScatter->GetRadixScatterSRVGPUHandle()
     );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::CellStartSRV_t4, ParticleGridComputePipeline->GetCellStartSRVGPUHandle()
@@ -173,7 +249,6 @@ void Renderer::RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *Cmd
         ComputeRootParams::CellEndSRV_t5, ParticleGridComputePipeline->GetCellEndSRVGPUHandle()
     );
     DispatchComputeWithBarrier(CmdList, ParticleForcesComputePipeline->GetParticleForcesBuffer());
-    //DebugBuffer.ReadBackDebugBuffer(CmdList);
 }
 
 void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *CmdList)
@@ -193,9 +268,6 @@ void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *
     );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::ParticleForcesSRV_t0, ParticleForcesComputePipeline->GetParticleForcesSRVGPUHandle()
-    );
-    CmdList->SetComputeRootDescriptorTable(
-        ComputeRootParams::SortedMortonSRV_t3, ParticleSortComputePipeline->GetBitonicSortSRVGPUHandle()
     );
     CmdList->SetComputeRootDescriptorTable(
         ComputeRootParams::CellStartSRV_t4, ParticleGridComputePipeline->GetCellStartSRVGPUHandle()
@@ -331,8 +403,8 @@ void Renderer::InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList)
         DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleIntegrate_cs.cso", *FluidHeapDesc.get()
     );
 
-    ParticleMortonComputePipeline = CreateComputePipelineInstance<MortonComputePipeline>(
-        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleMorton_cs.cso", *FluidHeapDesc.get()
+    ParticleHashComputePipeline = CreateComputePipelineInstance<HashComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleHash_cs.cso", *FluidHeapDesc.get()
     );
 
     ParticleSortComputePipeline = CreateComputePipelineInstance<BitonicSortComputePipeline>(
@@ -343,5 +415,15 @@ void Renderer::InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList)
         DeviceRef, CompRootSig, CmdList, SHADER_PATH "ParticleSystem/ParticleGrid_cs.cso", *FluidHeapDesc.get()
     );
 
-    DebugBuffer.CreateDebugUAVDesc(DeviceRef, *FluidHeapDesc.get());
+    ParticleRadixHistogram = CreateComputePipelineInstance<RadixHistogramComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "RadixSort/RadixHistogram_cs.cso", *FluidHeapDesc.get()
+    );
+
+    ParticleRadixPrefixSum = CreateComputePipelineInstance<RadixPrefixSumComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "RadixSort/RadixPrefixSum_cs.cso", *FluidHeapDesc.get()
+    );
+
+    ParticleRadixScatter = CreateComputePipelineInstance<RadixScatterComputePipeline>(
+        DeviceRef, CompRootSig, CmdList, SHADER_PATH "RadixSort/RadixScatter_cs.cso", *FluidHeapDesc.get()
+    );
 }

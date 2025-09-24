@@ -21,4 +21,5 @@ namespace ParticleInitialValues
 {
 constexpr float ParticleRadius = 0.05f;
 constexpr float ParticleSmoothingRadius = 0.2f;
+constexpr UINT RadixNumBits = 11;
 } // namespace ParticleInitialValues

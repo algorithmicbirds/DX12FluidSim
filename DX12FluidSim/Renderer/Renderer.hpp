@@ -16,9 +16,12 @@ class DXSwapchain;
 class FluidForcesComputePipeline;
 class FluidIntegrateComputePipeline;
 class FluidHeapDescriptor;
-class MortonComputePipeline;
+class HashComputePipeline;
 class BitonicSortComputePipeline;
 class BuildGridComputePipeline;
+class RadixHistogramComputePipeline;
+class RadixPrefixSumComputePipeline;
+class RadixScatterComputePipeline;
 
 struct PrecomputedParticleGPUData
 {
@@ -52,8 +55,11 @@ public:
 
 private:
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
-    void RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesHashComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticleRadixHistogramComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticleRadixPrefixSumComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticleRadixScatterComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticleGridComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void DispatchComputeWithBarrier(ID3D12GraphicsCommandList7 *CmdList, ID3D12Resource2 *Buffer);
@@ -82,8 +88,11 @@ private:
     std::unique_ptr<DXGraphicsPipeline> BoundingBoxPipeline;
     std::unique_ptr<FluidForcesComputePipeline> ParticleForcesComputePipeline;
     std::unique_ptr<FluidIntegrateComputePipeline> ParticleIntegrateComputePipeline;
-    std::unique_ptr<MortonComputePipeline> ParticleMortonComputePipeline;
+    std::unique_ptr<HashComputePipeline> ParticleHashComputePipeline;
     std::unique_ptr<BitonicSortComputePipeline> ParticleSortComputePipeline;
+    std::unique_ptr<RadixHistogramComputePipeline> ParticleRadixHistogram;
+    std::unique_ptr<RadixPrefixSumComputePipeline> ParticleRadixPrefixSum;
+    std::unique_ptr<RadixScatterComputePipeline> ParticleRadixScatter;
     std::unique_ptr<BuildGridComputePipeline> ParticleGridComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
@@ -92,7 +101,7 @@ private:
     UINT ParticleCount = SimInitials::ParticleCount;
     PrecomputedParticleGPUData ParticleBuffer;
 
-    StupidDebugBuffer DebugBuffer;
+    //StupidDebugBuffer DebugBuffer;
 
     bool bPingPong = false;
 };

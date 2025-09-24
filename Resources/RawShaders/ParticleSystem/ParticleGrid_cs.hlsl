@@ -4,7 +4,7 @@ struct ParticleHashData
     uint ParticleIndex;
 };
 
-StructuredBuffer<ParticleHashData> SortedHashKeys : register(t3);
+StructuredBuffer<ParticleHashData> SortedHashKeys : register(t8);
 RWStructuredBuffer<uint> CellStart : register(u3);
 RWStructuredBuffer<uint> CellEnd : register(u4);
 
