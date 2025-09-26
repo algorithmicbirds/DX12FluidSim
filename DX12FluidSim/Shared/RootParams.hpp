@@ -26,9 +26,8 @@ constexpr UINT CellStartUAV_u3 = 7;
 constexpr UINT CellEndUAV_u4 = 8;
 constexpr UINT ParticleForcesSRV_t0 = 9;
 constexpr UINT ParticlePrevPositionsSRV_t1 = 10;
-constexpr UINT ParticleHashSRV_t2 = 11;
-constexpr UINT SortedHashSRV_t3 = 12;
-constexpr UINT CellStartSRV_t4 = 13;
-constexpr UINT CellEndSRV_t5 = 14;
-constexpr UINT DebugUAV_u5 = 15;
+constexpr UINT SortedHashSRV_t3 = 11;
+constexpr UINT CellStartSRV_t4 = 12;
+constexpr UINT CellEndSRV_t5 = 13;
+constexpr UINT DebugUAV_u5 = 14;
 } // namespace ComputeRootParams

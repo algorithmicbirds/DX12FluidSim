@@ -10,10 +10,11 @@
 class HashComputePipeline : public FluidComputePipelineBase
 {
 private:
-    struct HashGPUResources
+    struct GPUResources
     {
         ComPtr<ID3D12Resource2> DefaultBuffer;
         ComPtr<ID3D12Resource2> ReadBackBuffer;
+        ComPtr<ID3D12Resource2> UploadBuffer;
     };
     struct HashDataSB
     {
@@ -31,16 +32,19 @@ public:
 public:
     virtual void CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList) override;
     virtual void CreateBufferDesc(FluidHeapDescriptor &HeapDesc) override;
-    void ReadBackHashBuffer(ID3D12GraphicsCommandList7 *CmdList);
-    void SortHashedValues();
     D3D12_GPU_DESCRIPTOR_HANDLE GetHashUAVGPUHandle() const { return HashUAVGPUHandle; }
-    /* D3D12_GPU_DESCRIPTOR_HANDLE GetHashSRVGPUHandle() const { return HashSRVGPUHandle; }*/
-    ID3D12Resource2 *GetHashBuffer() const { return HashGPU.DefaultBuffer.Get(); }
+    ID3D12Resource2 *GetHashBuffer() const { return HashGPUResources.DefaultBuffer.Get(); }
+    void ReadSortUpdateHashBuffer(ID3D12GraphicsCommandList7 *CmdList);
 
 private:
-    HashGPUResources HashGPU;
+    void ReadBackHashBuffer(ID3D12GraphicsCommandList7 *CmdList);
+    void SortHashData();
+    void WriteSortedHashesToBuffer();
+    void UploadSortedHashesToGPU(ID3D12GraphicsCommandList7 *CmdList);
+
+private:
+    GPUResources HashGPUResources;
     UINT ParticleCount = SimInitials::ParticleCount;
     std::vector<HashDataSB> HashSBCPU;
     D3D12_GPU_DESCRIPTOR_HANDLE HashUAVGPUHandle{};
-    D3D12_GPU_DESCRIPTOR_HANDLE HashSRVGPUHandle{};
 };

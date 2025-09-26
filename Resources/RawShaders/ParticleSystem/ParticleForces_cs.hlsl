@@ -27,7 +27,7 @@ struct ParticleCellHashData
     uint ParticleIndex;
 };
 
-StructuredBuffer<ParticleCellHashData> SortedParticleHashes : register(t3);
+RWStructuredBuffer<ParticleCellHashData> SortedParticleHashes : register(u1);
 StructuredBuffer<uint> GridCellStartIndices : register(t4);
 StructuredBuffer<uint> GridCellEndIndices : register(t5);
 
