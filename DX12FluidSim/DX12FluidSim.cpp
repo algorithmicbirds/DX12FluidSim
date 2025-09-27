@@ -78,6 +78,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ui.OnParticleBaseColorChanged.connect<&ConstantBuffers::SetUpdatedBaseColor>(constantBuffers);
         ui.OnParticleGlowColorChanged.connect<&ConstantBuffers::SetUpdatedGlowColor>(constantBuffers);
         ui.OnStifnessConstantChanged.connect<&ConstantBuffers::SetStiffnessConstant>(constantBuffers);
+        ui.OnViscosityCoeffecientChanged.connect<&ConstantBuffers::SetViscosityCoeffecient>(constantBuffers);
+        ui.OnRestDensityChanged.connect<&ConstantBuffers::SetRestDensity>(constantBuffers);
+
 
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
@@ -92,13 +95,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
             {
                 Window.FullScreenFlipFlop();
             }
-            if (Window.KeyPressed(0x41))
+            if (Window.KeyPressed(VK_SPACE))
             {
-                printf("A pressed\n");
-            }
-            if (Window.KeyPressed(0x57))
-            {
-                printf("W pressed\n");
+                ui.ToggleUI();
             }
             Window.ResetKeyBoardState();
 

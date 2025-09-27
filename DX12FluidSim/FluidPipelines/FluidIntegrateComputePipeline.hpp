@@ -13,18 +13,6 @@ struct ParticleIntegrateGPU
     ComPtr<ID3D12Resource2> UploadBuffer;
 };
 
-struct ParticleIntegrateSB
-{
-    DirectX::XMFLOAT3 Position;
-    float ParticleRadius = ParticleInitialValues::ParticleRadius;
-    DirectX::XMFLOAT3 Acceleration;
-    float ParticleSmoothingRadius = ParticleInitialValues::ParticleSmoothingRadius;
-    DirectX::XMFLOAT3 Velocity;
-    float Density = 0;
-    DirectX::XMFLOAT2 Pressure;
-    float Mass = 1.0f;
-};
-
 class FluidIntegrateComputePipeline : public FluidComputePipelineBase
 {
 public:

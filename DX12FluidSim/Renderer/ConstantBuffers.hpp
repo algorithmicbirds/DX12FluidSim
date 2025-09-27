@@ -47,6 +47,8 @@ struct ComputeSimParamsConstants
     float Damping = SimInitials::CollisionDamping;
     float StiffnessConstant = SimInitials::StiffnessConstant;
     UINT Pause = SimInitials::Pause;
+    float ViscosityCoeffecient = SimInitials::ViscosityCoeffecient;
+    float RestDensity = SimInitials::RestDensity;
 };
 
 struct GraphicsSimParamsConstants
@@ -82,6 +84,8 @@ public:
     void SetCollisionDampingData(float CollisionDamping);
     void SetStiffnessConstant(float StiffnessConstant);
     void SetPauseToggle(UINT PauseToggle);
+    void SetViscosityCoeffecient(float ViscosityCoeffecient);
+    void SetRestDensity(float RestDensity);
     void SetUpdatedBaseColor(DirectX::XMFLOAT4 Color);
     void SetUpdatedGlowColor(DirectX::XMFLOAT4 Color);
     void UpdateComputeSimParamsData();

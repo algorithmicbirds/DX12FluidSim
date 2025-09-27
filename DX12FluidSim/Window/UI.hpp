@@ -18,9 +18,12 @@ public:
     Nano::Signal<void(float)> OnGravityChanged;
     Nano::Signal<void(float)> OnCollisionDampingChanged;
     Nano::Signal<void(float)> OnStifnessConstantChanged;
+    Nano::Signal<void(float)> OnViscosityCoeffecientChanged;
+    Nano::Signal<void(float)> OnRestDensityChanged;
     Nano::Signal<void(UINT)> OnPauseToggled;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleBaseColorChanged;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleGlowColorChanged;
+    void ToggleUI() { bRenderUIEnabled = !bRenderUIEnabled; }
 
 private:
     void InitializeImGUI();
@@ -30,4 +33,5 @@ private:
     HWND &HwndRef;
     DXSwapchain &SwapchainRef;
     ComPtr<ID3D12DescriptorHeap> ImguiHeap;
+    bool bRenderUIEnabled = true;
 };

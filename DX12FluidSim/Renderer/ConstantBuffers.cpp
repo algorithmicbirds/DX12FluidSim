@@ -41,6 +41,17 @@ void ConstantBuffers::SetPauseToggle(UINT PauseToggle)
     UpdateComputeSimParamsData();
 }
 
+void ConstantBuffers::SetViscosityCoeffecient(float ViscosityCoeffecient)
+{
+    ComputeSimParamsCPU.ViscosityCoeffecient = ViscosityCoeffecient;
+    UpdateComputeSimParamsData();
+}
+
+void ConstantBuffers::SetRestDensity(float RestDensity) {
+    ComputeSimParamsCPU.RestDensity = RestDensity;
+    UpdateComputeSimParamsData();
+}
+
 void ConstantBuffers::SetUpdatedBaseColor(DirectX::XMFLOAT4 Color) 
 { 
     GraphicsSimParamsCPU.BaseColor = {Color.x, Color.y, Color.z, Color.w};

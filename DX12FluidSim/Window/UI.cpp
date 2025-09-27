@@ -71,8 +71,12 @@ void UI::NewFrame()
 
 void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
 {
-    NewFrame();
+    if (!bRenderUIEnabled)
+    {
+        return;
+    }
 
+    NewFrame();
     ID3D12DescriptorHeap *heaps[] = {ImguiHeap.Get()};
     CmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
@@ -81,6 +85,8 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     static float halfHeight = SimInitials::BoundingBoxHeight;
     static float gravity = SimInitials::Gravity;
     static float collisionDamping = SimInitials::CollisionDamping;
+    static float viscosityCoeffecient = SimInitials::ViscosityCoeffecient;
+    static float restDensity = SimInitials::RestDensity;
     static UINT pause = SimInitials::Pause;
     static ImVec4 ParticleBaseColor = {
         SimInitials::PariticleBaseColor.x,
@@ -113,9 +119,17 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     {
         OnCollisionDampingChanged.fire(collisionDamping);
     }
-    if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 1.0f))
+    if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 100.0f))
     {
         OnStifnessConstantChanged.fire(StiffnessConstant);
+    }
+    if (ImGui::SliderFloat("Viscosity Coeffecient", &viscosityCoeffecient, 0.0f, 50.0f))
+    {
+        OnViscosityCoeffecientChanged.fire(viscosityCoeffecient);
+    }
+    if (ImGui::SliderFloat("Rest Density", &restDensity, 0.0f, 3000.0f))
+    {
+        OnRestDensityChanged.fire(restDensity);
     }
     if (ImGui::Button(pause ? "Pause" : "Play"))
     {
@@ -128,13 +142,6 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
             ParticleBaseColor.x, ParticleBaseColor.y, ParticleBaseColor.z, ParticleBaseColor.w
         );
         OnParticleBaseColorChanged.fire(UpdatedColor);
-    }
-    if (ImGui::ColorEdit4("Particle Glow Color", (float *)&ParticleGlowColor))
-    {
-        DirectX::XMFLOAT4 UpdatedColor(
-            ParticleGlowColor.x, ParticleGlowColor.y, ParticleGlowColor.z, ParticleGlowColor.w
-        );
-        OnParticleGlowColorChanged.fire(UpdatedColor);
     }
     ImGui::End();
 

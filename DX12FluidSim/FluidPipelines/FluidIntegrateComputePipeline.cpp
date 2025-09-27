@@ -9,8 +9,8 @@ FluidIntegrateComputePipeline::~FluidIntegrateComputePipeline() = default;
 
 void FluidIntegrateComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommandList7 *CmdList)
 {
-    UINT StructuredBufferSize = sizeof(ParticleIntegrateSB) * ParticleCount;
-    std::vector<ParticleIntegrateSB> Particles(ParticleCount);
+    UINT StructuredBufferSize = sizeof(ParticleStructuredBuffer) * ParticleCount;
+    std::vector<ParticleStructuredBuffer> Particles(ParticleCount);
 
     Utils::CreateUploadBuffer(
         DeviceRef,
@@ -26,10 +26,10 @@ void FluidIntegrateComputePipeline::CreateStructuredBuffer(ID3D12GraphicsCommand
 void FluidIntegrateComputePipeline::CreateBufferDesc(FluidHeapDescriptor &HeapDesc)
 {
     ParticleIntegrateUAVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::UAV, ParticleGPU.DefaultBuffer, ParticleCount, sizeof(ParticleIntegrateSB)
+        DescriptorType::UAV, ParticleGPU.DefaultBuffer, ParticleCount, sizeof(ParticleStructuredBuffer)
     );
 
     ParticleIntegrateSRVGPUHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::SRV, ParticleGPU.DefaultBuffer, ParticleCount, sizeof(ParticleIntegrateSB)
+        DescriptorType::SRV, ParticleGPU.DefaultBuffer, ParticleCount, sizeof(ParticleStructuredBuffer)
     );
 }

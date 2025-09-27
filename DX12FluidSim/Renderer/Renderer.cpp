@@ -49,7 +49,7 @@ void Renderer::RenderFrame(ID3D12GraphicsCommandList7 *CmdList, float DeltaTime)
     RunParticlesForcesComputePipeline(CmdList);
     RunParticlesIntegrateComputePipeline(CmdList);
     RunParticlesGraphicsPipeline(CmdList);
-    // RunDensityVisualizationGraphicsPipeline(CmdList);
+     //RunDensityVisualizationGraphicsPipeline(CmdList);
     RunBoundingBoxGraphicsPipeline(CmdList);
 }
 

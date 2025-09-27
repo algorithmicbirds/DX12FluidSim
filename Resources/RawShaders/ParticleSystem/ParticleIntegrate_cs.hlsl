@@ -9,7 +9,9 @@ struct Particle
     float3 Velocity;
     float Density;
     float2 PressureForce;
+    float2 NearPressure;
     float Mass;
+    float NearDensity;
 };
 
 
