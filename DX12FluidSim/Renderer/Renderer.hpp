@@ -16,9 +16,10 @@ class DXSwapchain;
 class FluidForcesComputePipeline;
 class FluidIntegrateComputePipeline;
 class FluidHeapDescriptor;
-class MortonComputePipeline;
+class HashComputePipeline;
 class BitonicSortComputePipeline;
 class BuildGridComputePipeline;
+class DebugComputePipeline;
 
 struct PrecomputedParticleGPUData
 {
@@ -37,6 +38,14 @@ struct PrecomputedParticleConstants
     UINT GridCellSize ;
 };
 
+struct BitonicSortConstant
+{
+    UINT NumEntries;
+    UINT GroupWidth;
+    UINT GroupHeight;
+    UINT StepIndex;
+};
+
 class Renderer
 {
 public:
@@ -52,8 +61,9 @@ public:
 
 private:
     void ClearFrame(ID3D12GraphicsCommandList7 *CmdList);
-    void RunParticlesMortonComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesHashComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesSortComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
+    void RunParticlesDebugComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticleGridComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunParticlesForcesComputePipeline(ID3D12GraphicsCommandList7 *CmdList);
     void DispatchComputeWithBarrier(ID3D12GraphicsCommandList7 *CmdList, ID3D12Resource2 *Buffer);
@@ -62,6 +72,14 @@ private:
     void RunDensityVisualizationGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void RunBoundingBoxGraphicsPipeline(ID3D12GraphicsCommandList7 *CmdList);
     void InitalizeComputePipelines(ID3D12GraphicsCommandList7 *CmdList);
+    void CalculateNearestPow2() { 
+        NearestPow2 = 1;
+        while (NearestPow2 < ParticleCount)
+        {
+            NearestPow2 <<= 1;
+            NumStages++;
+        }
+    }
 
     template <typename T>
     std::unique_ptr<T> CreateComputePipelineInstance(
@@ -75,23 +93,27 @@ private:
 private:
     DXSwapchain &SwapchainRef;
     ID3D12Device14 &DeviceRef;
-    D3D12_VIEWPORT Viewport{};
-
     ConstantBuffers &ConstantBuffersRef;
+    
+    D3D12_VIEWPORT Viewport{};
+    
+    UINT NumStages = 0;
+    UINT NearestPow2 = 1;
+    GPUConstantBuffer<BitonicSortConstant> BitonicSortGPUConst;
 
     std::unique_ptr<DXGraphicsPipeline> BoundingBoxPipeline;
     std::unique_ptr<FluidForcesComputePipeline> ParticleForcesComputePipeline;
     std::unique_ptr<FluidIntegrateComputePipeline> ParticleIntegrateComputePipeline;
-    std::unique_ptr<MortonComputePipeline> ParticleMortonComputePipeline;
+    std::unique_ptr<HashComputePipeline> ParticleHashComputePipeline;
     std::unique_ptr<BitonicSortComputePipeline> ParticleSortComputePipeline;
     std::unique_ptr<BuildGridComputePipeline> ParticleGridComputePipeline;
+    std::unique_ptr<DebugComputePipeline> ParticleDebugComputePipeline;
     std::unique_ptr<DXGraphicsPipeline> ParticleGraphicsPipeline;
     std::unique_ptr<DXGraphicsPipeline> DensityVisualizationGraphicsPipeline;
     std::unique_ptr<FluidHeapDescriptor> FluidHeapDesc;
 
     UINT ParticleCount = SimInitials::ParticleCount;
     PrecomputedParticleGPUData ParticleBuffer;
-
     StupidDebugBuffer DebugBuffer;
 
     bool bPingPong = false;

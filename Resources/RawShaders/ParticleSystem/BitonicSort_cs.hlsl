@@ -1,44 +1,43 @@
-struct ParticleHashData
+struct ParticleCellHash
 {
-    uint CellHash;
+    uint ParticleHash;
     uint ParticleIndex;
 };
 
-RWStructuredBuffer<ParticleHashData> OutputSortedKeys : register(u2);
-StructuredBuffer<ParticleHashData> InputKeys : register(t2);
 
-groupshared ParticleHashData sharedKeys[256];
+RWStructuredBuffer<ParticleCellHash> UnsortedKeys : register(u1);
 
-[numthreads(256, 1, 1)]
-void CSMain(uint DTid : SV_DispatchThreadID)
+cbuffer SortConstants : register(b4)
 {
-    uint particleIndex = DTid.x;
-
-    sharedKeys[particleIndex] = InputKeys[particleIndex];
-    GroupMemoryBarrierWithGroupSync();
-
-    for (uint sequenceLength = 2; sequenceLength <= 256; sequenceLength <<= 1)
-    {
-        for (uint compareDistance = sequenceLength >> 1; compareDistance > 0; compareDistance >>= 1)
-        {
-            uint comparePartnerIndex = particleIndex ^ compareDistance;
-            if (comparePartnerIndex > particleIndex)
-            {
-                bool ascendingOrder = (particleIndex & sequenceLength) == 0;
-                bool swap = (ascendingOrder && sharedKeys[particleIndex].CellHash > sharedKeys[comparePartnerIndex].CellHash) ||
-                            (!ascendingOrder && sharedKeys[particleIndex].CellHash < sharedKeys[comparePartnerIndex].CellHash);
-
-                if (swap)
-                {
-                    ParticleHashData temp = sharedKeys[particleIndex];
-                    sharedKeys[particleIndex] = sharedKeys[comparePartnerIndex];
-                    sharedKeys[comparePartnerIndex] = temp;
-                }
-            }
-
-            GroupMemoryBarrierWithGroupSync();
-        }
-    }
-
-    OutputSortedKeys[particleIndex] = sharedKeys[particleIndex];
+    uint numEntries;
+    uint groupWidth;
+    uint groupHeight;
+    uint stepIndex;
 }
+
+
+
+[numthreads(128, 1, 1)]
+void CSMain(uint3 DTid : SV_DispatchThreadID)
+{
+    uint id = DTid.x;
+    uint hIndex = id & (groupWidth - 1);
+    uint leftIndex = hIndex + (groupHeight + 1) * (id / groupWidth);
+    uint rightStepSize = stepIndex == 0 ? groupHeight - 2 * hIndex: (groupHeight + 1) / 2;
+    uint rightIndex = leftIndex + rightStepSize;
+    
+    if(rightIndex >= numEntries)
+        return;
+    
+    uint rightValue = UnsortedKeys[rightIndex].ParticleHash;
+    uint leftValue = UnsortedKeys[leftIndex].ParticleHash;
+    
+    bool SwapHappened = leftValue > rightValue;
+    if(SwapHappened)
+    {
+        ParticleCellHash temp = UnsortedKeys[leftIndex];
+        UnsortedKeys[leftIndex] = UnsortedKeys[rightIndex];
+        UnsortedKeys[rightIndex] = temp;
+    }
+}
+

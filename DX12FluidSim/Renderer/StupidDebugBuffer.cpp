@@ -16,13 +16,14 @@ void StupidDebugBuffer::ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
     );
 
     void *pData = nullptr;
-    D3D12_RANGE readRange{0, sizeof(PixelDebugStructuredBuffer) * ParticleCount};
+    D3D12_RANGE readRange{0, sizeof(DebugStructuredBuffer) * ParticleCount};
     GPUDebug.ReadBackBuffer->Map(0, &readRange, &pData);
 
-    PixelDebugStructuredBuffer *debugData = reinterpret_cast<PixelDebugStructuredBuffer *>(pData);
+    DebugStructuredBuffer *debugData = reinterpret_cast<DebugStructuredBuffer *>(pData);
     for (UINT i = 0; i < ParticleCount; ++i)
     {
-        std::cout << "Particle " << i << " density = " << debugData[i].Density << "\n ";
+        std::cout << "Partilcle:  " << i << " ParticleIndex: " << debugData[i].ParticleIndex
+                  << " PartilcleHash : " << debugData[i].ParticleHash << "\n ";
     }
 
     GPUDebug.ReadBackBuffer->Unmap(0, nullptr);
@@ -30,7 +31,7 @@ void StupidDebugBuffer::ReadBackDebugBuffer(ID3D12GraphicsCommandList7 *CmdList)
 
 void StupidDebugBuffer::CreateDebugUAVDesc(ID3D12Device14 &Device, FluidHeapDescriptor &HeapDesc)
 {
-    UINT DebugBufSize = sizeof(PixelDebugStructuredBuffer) * ParticleCount;
+    UINT DebugBufSize = sizeof(DebugStructuredBuffer) * ParticleCount;
     GPUDebug.DefaultBuffer = Utils::CreateBuffer(
         Device,
         DebugBufSize,
@@ -42,8 +43,7 @@ void StupidDebugBuffer::CreateDebugUAVDesc(ID3D12Device14 &Device, FluidHeapDesc
     GPUDebug.ReadBackBuffer =
         Utils::CreateBuffer(Device, DebugBufSize, D3D12_HEAP_TYPE_READBACK, D3D12_RESOURCE_STATE_COPY_DEST);
 
-
     DebugGPUDescHandle = HeapDesc.AllocateDescriptor(
-        DescriptorType::UAV, GPUDebug.DefaultBuffer, ParticleCount, sizeof(PixelDebugStructuredBuffer)
+        DescriptorType::UAV, GPUDebug.DefaultBuffer, ParticleCount, sizeof(DebugStructuredBuffer)
     );
 }

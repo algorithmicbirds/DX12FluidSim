@@ -2,9 +2,9 @@
 
 #include "FluidPipelines/FluidComputePipelineBase.hpp"
 
-struct SortedMortonData
+struct SortedHashData
 {
-    UINT MortonCode;
+    UINT HashCode;
     UINT ParticleIndex;
 };
 

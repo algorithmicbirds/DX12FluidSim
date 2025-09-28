@@ -23,20 +23,35 @@ cbuffer PrecomputedKernalsData : register(b3)
     float GridCellSize;
 }
 
+
 uint Compute2DSpatialHash(int2 cellCoordinates, uint hashTableSize)
 {
     const uint primeX = 73856093;
     const uint primeY = 19349663;
-
-    uint hashValue = ((uint) cellCoordinates.x * primeX) ^ ((uint) cellCoordinates.y * primeY);
-    return hashValue % hashTableSize; 
+    const uint primeZ = 83492791;
+    const uint primeW = 101359783;
+    
+    const uint offset = 0x40000000;
+    uint x = (uint) (cellCoordinates.x + offset);
+    uint y = (uint) (cellCoordinates.y + offset);
+    
+    uint hashValue = (x * primeX) ^ (y * primeY) ^ primeZ;
+    
+    hashValue ^= (hashValue >> 16);
+    hashValue *= primeW;
+    hashValue ^= (hashValue >> 13);
+    
+    uint result = (hashValue % hashTableSize);
+    return (result == 0) ? 1 : result;
 }
 
 [numthreads(256, 1, 1)]
 void CSMain(uint3 threadID : SV_DispatchThreadID)
 {
     uint particleIndex = threadID.x;
-
+    if (particleIndex >= ParticleCount)
+        return;
+    
     Particle currentParticle = gParticleBuffer[particleIndex];
 
     int2 cellCoordinates;
