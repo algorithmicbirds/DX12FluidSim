@@ -7,6 +7,7 @@
 #include "DebugLayer/DebugMacros.hpp"
 #include "Window/UI.hpp"
 #include "Renderer/ConstantBuffers.hpp"
+#include "Window/Interaction.hpp"
 
 #ifdef _DEBUG
 void InitConsole()
@@ -66,12 +67,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         Renderer Renderer{Swapchain, *Context.GetDevice(), constantBuffers};
         Renderer.SetViewport(Swapchain.GetViewport());
         ID3D12GraphicsCommandList7 *CmdList = Context.InitCmdList();
-
+        Interaction interaction{Window, constantBuffers};
         Renderer.InitializeBuffers(CmdList);
 
         UI ui{Context, Swapchain, Window.GetHwnd()};
-        ui.OnHeightChanged.connect<&ConstantBuffers::SetBoundingBoxHeight>(constantBuffers);
-        ui.OnWidthChanged.connect<&ConstantBuffers::SetBoundingBoxWidth>(constantBuffers);
+        ui.OnBBHeightOrWidthChanged.connect<&ConstantBuffers::SetBoundingBoxHeightAndWidth>(constantBuffers);
         ui.OnGravityChanged.connect<&ConstantBuffers::SetGravityData>(constantBuffers);
         ui.OnCollisionDampingChanged.connect<&ConstantBuffers::SetCollisionDampingData>(constantBuffers);
         ui.OnPauseToggled.connect<&ConstantBuffers::SetPauseToggle>(constantBuffers);
@@ -80,7 +80,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ui.OnStifnessConstantChanged.connect<&ConstantBuffers::SetStiffnessConstant>(constantBuffers);
         ui.OnViscosityCoeffecientChanged.connect<&ConstantBuffers::SetViscosityCoeffecient>(constantBuffers);
         ui.OnRestDensityChanged.connect<&ConstantBuffers::SetRestDensity>(constantBuffers);
-
+        ui.OnInteractionStrChanged.connect<&ConstantBuffers::SetUpdatedInteractionStr>(constantBuffers);
 
         Context.DispatchCmdList();
         while (!Window.ShouldClose())
@@ -100,6 +100,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
                 ui.ToggleUI();
             }
             Window.ResetKeyBoardState();
+          
+
+            interaction.Update();
 
             if (Window.ShouldResize())
             {

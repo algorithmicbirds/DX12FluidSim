@@ -20,6 +20,7 @@ template <typename T> struct GPUConstantBuffer
 
     void Update(const T &Data) { memcpy(MappedPtr, &Data, sizeof(T)); }
 };
+
 struct CameraConstant
 {
     DirectX::XMMATRIX ViewProjection;
@@ -39,6 +40,14 @@ struct BoundingBoxConstant
 struct TimerConstant
 {
     float DeltaTime;
+};
+
+struct InteractionConstants
+{
+    DirectX::XMFLOAT2 MousePos;
+    UINT LeftMBDown;
+    UINT RightMBDown;
+    float InteractionStrength = SimInitials::InteractionStr;
 };
 
 struct ComputeSimParamsConstants
@@ -78,8 +87,7 @@ public:
     ConstantBuffers(const ConstantBuffers &) = delete;
 
 public:
-    void SetBoundingBoxHeight(float Height);
-    void SetBoundingBoxWidth(float Width);
+    void SetBoundingBoxHeightAndWidth(float Height, float Width);
     void SetGravityData(float Gravity);
     void SetCollisionDampingData(float CollisionDamping);
     void SetStiffnessConstant(float StiffnessConstant);
@@ -98,6 +106,11 @@ public:
         UpdateCameraBuffer();
     }
     void OnResize(float NewAspectRatio);
+    void OnMouseLBDown(UINT RBDown);
+    void OnMouseRBDown(UINT LBDown);
+    void OnMouseMove(DirectX::XMFLOAT2 MousePos);
+    void SetUpdatedInteractionStr(float InteractionStr);
+    void UpdateInteractionParams() { InteractionCB.Update(InteractionConstantCPU); }
 
 public:
     D3D12_GPU_VIRTUAL_ADDRESS GetTimerGPUVirtualAddress() const { return TimerCB.GPUAddress; }
@@ -105,6 +118,7 @@ public:
     D3D12_GPU_VIRTUAL_ADDRESS GetComputeSimParamsGPUVirtualAddress() const { return ComputeSimParamsCB.GPUAddress; }
     D3D12_GPU_VIRTUAL_ADDRESS GetCameraGPUVirtualAddress() const { return CameraCB.GPUAddress; }
     D3D12_GPU_VIRTUAL_ADDRESS GetGraphicsSimParamsGPUVirtualAddress() const { return GraphicsSimParamsCB.GPUAddress; }
+    D3D12_GPU_VIRTUAL_ADDRESS GetInteractionGPUVirtualAddress() const { return InteractionCB.GPUAddress; }
 
 private:
     void UpdateBoundingBoxData();
@@ -118,16 +132,15 @@ private:
     };
 
     ComputeSimParamsConstants ComputeSimParamsCPU{
-        SimInitials::Gravity,
-        SimInitials::CollisionDamping,
-        SimInitials::StiffnessConstant,
-        SimInitials::Pause
+        SimInitials::Gravity, SimInitials::CollisionDamping, SimInitials::StiffnessConstant, SimInitials::Pause
     };
     GraphicsSimParamsConstants GraphicsSimParamsCPU{SimInitials::PariticleBaseColor, SimInitials::PariticleGlowColor};
+    InteractionConstants InteractionConstantCPU;
 
     GPUConstantBuffer<TimerConstant> TimerCB;
     GPUConstantBuffer<CameraConstant> CameraCB;
     GPUConstantBuffer<BoundingBoxConstant> BoundingBoxCB;
     GPUConstantBuffer<ComputeSimParamsConstants> ComputeSimParamsCB;
     GPUConstantBuffer<GraphicsSimParamsConstants> GraphicsSimParamsCB;
+    GPUConstantBuffer<InteractionConstants> InteractionCB;
 };

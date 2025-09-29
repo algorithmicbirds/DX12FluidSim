@@ -87,6 +87,8 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     static float collisionDamping = SimInitials::CollisionDamping;
     static float viscosityCoeffecient = SimInitials::ViscosityCoeffecient;
     static float restDensity = SimInitials::RestDensity;
+    static float StiffnessConstant = SimInitials::StiffnessConstant;
+    static float InteractionStrength = SimInitials::InteractionStr;
     static UINT pause = SimInitials::Pause;
     static ImVec4 ParticleBaseColor = {
         SimInitials::PariticleBaseColor.x,
@@ -100,16 +102,14 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
         SimInitials::PariticleGlowColor.z,
         SimInitials::PariticleGlowColor.w
     };
-    static float StiffnessConstant = SimInitials::StiffnessConstant;
 
     if (ImGui::SliderFloat("Width", &halfWidth, 0.5f, 3.5f))
     {
-        OnWidthChanged.fire(halfWidth);
+        OnBBHeightOrWidthChanged.fire(halfHeight, halfWidth);
     }
-
     if (ImGui::SliderFloat("Height", &halfHeight, 0.25f, 2.0f))
     {
-        OnHeightChanged.fire(halfHeight);
+        OnBBHeightOrWidthChanged.fire(halfHeight, halfWidth);
     }
     if (ImGui::SliderFloat("Gravity", &gravity, -30.0f, 30.0f))
     {
@@ -118,6 +118,10 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     if (ImGui::SliderFloat("CollisonDamping", &collisionDamping, 0.0f, 1.0f))
     {
         OnCollisionDampingChanged.fire(collisionDamping);
+    }
+    if (ImGui::SliderFloat("InteractionStr", &InteractionStrength, 0.0f, 10.0f))
+    {
+        OnInteractionStrChanged.fire(InteractionStrength);
     }
     if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 100.0f))
     {

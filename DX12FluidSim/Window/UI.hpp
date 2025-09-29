@@ -13,13 +13,13 @@ public:
     void NewFrame();
 
 public:
-    Nano::Signal<void(float)> OnHeightChanged;
-    Nano::Signal<void(float)> OnWidthChanged;
+    Nano::Signal<void(float, float)> OnBBHeightOrWidthChanged;
     Nano::Signal<void(float)> OnGravityChanged;
     Nano::Signal<void(float)> OnCollisionDampingChanged;
     Nano::Signal<void(float)> OnStifnessConstantChanged;
     Nano::Signal<void(float)> OnViscosityCoeffecientChanged;
     Nano::Signal<void(float)> OnRestDensityChanged;
+    Nano::Signal<void(float)> OnInteractionStrChanged;
     Nano::Signal<void(UINT)> OnPauseToggled;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleBaseColorChanged;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleGlowColorChanged;

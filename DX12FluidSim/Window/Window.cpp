@@ -1,12 +1,11 @@
 #include "Window.hpp"
 #include "Icons/resource.h"
-
+#include <iostream>
 #include <stdexcept>
 
 #include <imgui_impl_win32.h>
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 
 Window::Window()
 {
@@ -176,8 +175,18 @@ LRESULT CALLBACK Window::StaticWindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LP
 
 LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
 {
-    if (ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam))
-        return 0;
+    if (ImGui::GetCurrentContext())
+    {
+        ImGuiIO &io = ImGui::GetIO();
+        if (ImGui_ImplWin32_WndProcHandler(Hwnd, Msg, WParam, LParam))
+        {
+            return 0;
+        }
+        if (io.WantCaptureMouse)
+        {
+            return DefWindowProcW(Hwnd, Msg, WParam, LParam);
+        }
+    }
 
     switch (Msg)
     {
@@ -204,43 +213,56 @@ LRESULT Window::WindowProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
         break;
     case WM_MOUSEMOVE:
     {
-        int x = LOWORD(LParam);
-        int y = HIWORD(LParam);
+        int x = GET_X_LPARAM(LParam);
+        int y = GET_Y_LPARAM(LParam);
+        RECT clientRect;
+        GetClientRect(Hwnd, &clientRect);
+        int width = clientRect.right - clientRect.left;
+        int height = clientRect.bottom - clientRect.top;
+        bool bIsInside = x >= 0 && x < width && y >= 0 && y < height;
         Mouse.OnMouseMove(x, y);
+        if (bIsInside && !Mouse.IsInWindow())
+        {
+            Mouse.OnMouseEnter();
+        }
+        else if (!bIsInside && Mouse.IsInWindow())
+        {
+            Mouse.OnMouseLeave();
+        }
         break;
     }
     case WM_LBUTTONDOWN:
     {
-        int x = LOWORD(LParam);
-        int y = HIWORD(LParam);
+        int x = GET_X_LPARAM(LParam);
+        int y = GET_Y_LPARAM(LParam);
         Mouse.OnLeftPressed(x, y);
         break;
     }
     case WM_LBUTTONUP:
     {
-        int x = LOWORD(LParam);
-        int y = HIWORD(LParam);
+        int x = GET_X_LPARAM(LParam);
+        int y = GET_Y_LPARAM(LParam);
         Mouse.OnLeftReleased(x, y);
         break;
     }
     case WM_RBUTTONDOWN:
     {
-        int x = LOWORD(LParam);
-        int y = HIWORD(LParam);
+        int x = GET_X_LPARAM(LParam);
+        int y = GET_Y_LPARAM(LParam);
         Mouse.OnRightPressed(x, y);
         break;
     }
     case WM_RBUTTONUP:
     {
-        int x = LOWORD(LParam);
-        int y = HIWORD(LParam);
+        int x = GET_X_LPARAM(LParam);
+        int y = GET_Y_LPARAM(LParam);
         Mouse.OnRightReleased(x, y);
         break;
     }
     case WM_MOUSEWHEEL:
     {
-        int x = LOWORD(LParam);
-        int y = HIWORD(LParam);
+        int x = GET_X_LPARAM(LParam);
+        int y = GET_Y_LPARAM(LParam);
         int delta = GET_WHEEL_DELTA_WPARAM(WParam);
         Mouse.OnWheelDelta(x, y, delta);
         break;

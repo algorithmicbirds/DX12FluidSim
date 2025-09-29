@@ -45,6 +45,15 @@ cbuffer PrecomputedKernalsData : register(b3)
     uint ParticleCount;
 }
 
+cbuffer InteractionConstants : register(b4)
+{
+    float2 MousePos;
+    uint LeftMBDown;
+    uint RightMBDown;
+    float InteractionStrength;
+}
+
+
 void ResolveCollision(inout Particle particle)
 {
     float SurfaceOffset = 0.001f;
@@ -106,6 +115,32 @@ float3 XSPHVelocityCorrection(uint particleIndex)
     return vXSPH;
 }
 
+void ApplyMouseInteraction(inout Particle particle, float2 mousePos, uint leftMBDown, uint rightMBDown)
+{
+    mousePos.x = BBMin.x + MousePos.x * (BBMax.x - BBMin.x);
+    mousePos.y = BBMin.y + MousePos.y * (BBMax.y - BBMin.y);
+    float2 toMouse = mousePos - particle.Position.xy;
+    float distSq = dot(toMouse, toMouse);
+    float InteractionRad = 1.0f ;
+    if (distSq < InteractionRad * InteractionRad)
+    {
+        float dist = sqrt(distSq);
+        float2 dir = toMouse / (dist + 1e-6f);
+        float2 force = float2(0.0f, 0.0f);
+        float SpikeStr = 20.0f;
+        if (leftMBDown == 1)
+        {
+            force -= dir * InteractionStrength * SpikeStr * (1.0f - dist / InteractionRad);
+        }
+
+        if (rightMBDown == 1)
+        {
+            force += dir * InteractionStrength * SpikeStr * (1.0f - dist / InteractionRad);
+        }
+        particle.Acceleration.xy += force;
+    }
+}
+
 [numthreads(256, 1, 1)]
 void CSMain(uint3 DTid : SV_DispatchThreadID)
 {
@@ -117,14 +152,15 @@ void CSMain(uint3 DTid : SV_DispatchThreadID)
         // velocity verlet integration
         particle.Acceleration = float3(0.0f, -Gravity, 0.0f);
         particle.Acceleration.xy += particle.PressureForce / particle.Density;
+        ApplyMouseInteraction(particle, MousePos, LeftMBDown, RightMBDown);
         particle.Position += particle.Velocity * DeltaTimeCompute + 0.5 * particle.Acceleration * (DeltaTimeCompute * DeltaTimeCompute);
         float3 newAcceleration = float3(0.0f, -Gravity, 0.0f);
         newAcceleration.xy += particle.PressureForce / particle.Density;
+        ApplyMouseInteraction(particle, MousePos, LeftMBDown, RightMBDown);
         particle.Velocity += 0.5 * (particle.Acceleration + newAcceleration) * DeltaTimeCompute;
         particle.Acceleration = newAcceleration;
         particle.Velocity += 0.05f * XSPHVelocityCorrection(i);
         ResolveCollision(particle);
     }
-
     gParticleUAV[i] = particle;
 }

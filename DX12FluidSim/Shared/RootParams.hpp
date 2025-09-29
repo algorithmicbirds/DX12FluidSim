@@ -17,7 +17,8 @@ constexpr UINT TimerCB_b0 = 0;
 constexpr UINT BoundingBoxCB_b1 = 1;
 constexpr UINT ComputeSimParamsCB_b2 = 2;
 constexpr UINT PrecomputedKernalCB_b3 = 3;
-constexpr UINT ParticleForcesUAV_u0 = 4;
-constexpr UINT ParticleForcesSRV_t0 = 5;
-constexpr UINT ParticlePrevPositionsSRV_t1 = 6;
+constexpr UINT InteractionCB_b4 = 4;
+constexpr UINT ParticleForcesUAV_u0 = 5;
+constexpr UINT ParticleForcesSRV_t0 = 6;
+constexpr UINT ParticlePrevPositionsSRV_t1 = 7;
 } // namespace ComputeRootParams

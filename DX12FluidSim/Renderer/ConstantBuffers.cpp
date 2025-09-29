@@ -4,15 +4,10 @@ ConstantBuffers::ConstantBuffers() {}
 
 ConstantBuffers::~ConstantBuffers() {}
 
-void ConstantBuffers::SetBoundingBoxHeight(float Height)
+void ConstantBuffers::SetBoundingBoxHeightAndWidth(float Height, float Width)
 {
     BoundingBoxCPU.Min.y = -Height;
     BoundingBoxCPU.Max.y = Height;
-    UpdateBoundingBoxData();
-}
-
-void ConstantBuffers::SetBoundingBoxWidth(float Width)
-{
     BoundingBoxCPU.Min.x = -Width;
     BoundingBoxCPU.Max.x = Width;
     UpdateBoundingBoxData();
@@ -30,7 +25,8 @@ void ConstantBuffers::SetCollisionDampingData(float CollisionDamping)
     UpdateComputeSimParamsData();
 }
 
-void ConstantBuffers::SetStiffnessConstant(float StiffnessConstant) {
+void ConstantBuffers::SetStiffnessConstant(float StiffnessConstant)
+{
     ComputeSimParamsCPU.StiffnessConstant = StiffnessConstant;
     UpdateComputeSimParamsData();
 }
@@ -47,13 +43,14 @@ void ConstantBuffers::SetViscosityCoeffecient(float ViscosityCoeffecient)
     UpdateComputeSimParamsData();
 }
 
-void ConstantBuffers::SetRestDensity(float RestDensity) {
+void ConstantBuffers::SetRestDensity(float RestDensity)
+{
     ComputeSimParamsCPU.RestDensity = RestDensity;
     UpdateComputeSimParamsData();
 }
 
-void ConstantBuffers::SetUpdatedBaseColor(DirectX::XMFLOAT4 Color) 
-{ 
+void ConstantBuffers::SetUpdatedBaseColor(DirectX::XMFLOAT4 Color)
+{
     GraphicsSimParamsCPU.BaseColor = {Color.x, Color.y, Color.z, Color.w};
     GraphicsSimParamsCB.Update(GraphicsSimParamsCPU);
 }
@@ -63,7 +60,6 @@ void ConstantBuffers::SetUpdatedGlowColor(DirectX::XMFLOAT4 Color)
     GraphicsSimParamsCPU.GlowColor = {Color.x, Color.y, Color.z, Color.w};
     GraphicsSimParamsCB.Update(GraphicsSimParamsCPU);
 }
-
 
 void ConstantBuffers::UpdateCameraBuffer()
 {
@@ -89,7 +85,9 @@ void ConstantBuffers::InitializeBuffers(ID3D12Device14 &Device)
     TimerCB.Initialize(Device);
     CameraCB.Initialize(Device);
     BoundingBoxCB.Initialize(Device);
+    InteractionCB.Initialize(Device);
     GraphicsSimParamsCB.Update(GraphicsSimParamsCPU);
+    UpdateInteractionParams();
     UpdateBoundingBoxData();
     UpdateComputeSimParamsData();
 }
@@ -98,4 +96,29 @@ void ConstantBuffers::UpdateComputeSimParamsData() { ComputeSimParamsCB.Update(C
 
 void ConstantBuffers::UpdateBoundingBoxData() { BoundingBoxCB.Update(BoundingBoxCPU); }
 
-void ConstantBuffers::OnResize(float NewAspectRatio) { Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f); }
+void ConstantBuffers::OnResize(float NewAspectRatio)
+{
+    Camera.SetLens(DirectX::XM_PIDIV4, NewAspectRatio, 0.1f, 1000.0f);
+}
+
+void ConstantBuffers::OnMouseLBDown(UINT RBDown)
+{
+    InteractionConstantCPU.LeftMBDown = RBDown;
+    UpdateInteractionParams();
+}
+
+void ConstantBuffers::OnMouseRBDown(UINT LBDown)
+{
+    InteractionConstantCPU.RightMBDown = LBDown;
+    UpdateInteractionParams();
+}
+
+void ConstantBuffers::OnMouseMove(DirectX::XMFLOAT2 MousePos) {
+    InteractionConstantCPU.MousePos = MousePos;
+    UpdateInteractionParams();
+}
+
+void ConstantBuffers::SetUpdatedInteractionStr(float InteractionStr) {
+    InteractionConstantCPU.InteractionStrength = InteractionStr;
+    UpdateInteractionParams();
+}

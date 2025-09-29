@@ -12,6 +12,7 @@ constexpr UINT Pause = 0;
 constexpr UINT ViscosityCoeffecient = 20.0f; 
 constexpr UINT RestDensity = 600.0f; 
 constexpr UINT ParticleCount = 20000;
+constexpr float InteractionStr = 1.0f;
 constexpr float StiffnessConstant = 20.0f;
 constexpr DirectX::XMFLOAT4 PariticleBaseColor(0.0f, 0.1f, 1.0f, 1.0f);
 constexpr DirectX::XMFLOAT4 PariticleGlowColor(0.0f, 0.1f, 1.0f, 1.0f);

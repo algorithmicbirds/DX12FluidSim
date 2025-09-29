@@ -108,6 +108,9 @@ void Renderer::RunParticlesIntegrateComputePipeline(ID3D12GraphicsCommandList7 *
         ComputeRootParams::ComputeSimParamsCB_b2, ConstantBuffersRef.GetComputeSimParamsGPUVirtualAddress()
     );
     CmdList->SetComputeRootConstantBufferView(ComputeRootParams::PrecomputedKernalCB_b3, ParticleBuffer.GPUAddress);
+    CmdList->SetComputeRootConstantBufferView(
+        ComputeRootParams::InteractionCB_b4, ConstantBuffersRef.GetInteractionGPUVirtualAddress()
+    );
     ID3D12DescriptorHeap *Heaps[] = {FluidHeapDesc->GetDescriptorHeap()};
     CmdList->SetDescriptorHeaps(1, Heaps);
     CmdList->SetComputeRootDescriptorTable(
