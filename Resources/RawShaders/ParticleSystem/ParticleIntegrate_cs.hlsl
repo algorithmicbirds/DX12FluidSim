@@ -51,6 +51,7 @@ cbuffer InteractionConstants : register(b4)
     uint LeftMBDown;
     uint RightMBDown;
     float InteractionStrength;
+    float InteractionRad;
 }
 
 
@@ -121,7 +122,6 @@ void ApplyMouseInteraction(inout Particle particle, float2 mousePos, uint leftMB
     mousePos.y = BBMin.y + MousePos.y * (BBMax.y - BBMin.y);
     float2 toMouse = mousePos - particle.Position.xy;
     float distSq = dot(toMouse, toMouse);
-    float InteractionRad = 1.0f ;
     if (distSq < InteractionRad * InteractionRad)
     {
         float dist = sqrt(distSq);

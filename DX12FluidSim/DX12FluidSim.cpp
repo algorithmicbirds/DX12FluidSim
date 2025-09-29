@@ -81,6 +81,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
         ui.OnViscosityCoeffecientChanged.connect<&ConstantBuffers::SetViscosityCoeffecient>(constantBuffers);
         ui.OnRestDensityChanged.connect<&ConstantBuffers::SetRestDensity>(constantBuffers);
         ui.OnInteractionStrChanged.connect<&ConstantBuffers::SetUpdatedInteractionStr>(constantBuffers);
+        ui.OnInteractionRadChanged.connect<&ConstantBuffers::SetUpdatedInteractionRad>(constantBuffers);
 
         Context.DispatchCmdList();
         while (!Window.ShouldClose())

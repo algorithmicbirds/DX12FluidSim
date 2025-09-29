@@ -20,6 +20,7 @@ public:
     Nano::Signal<void(float)> OnViscosityCoeffecientChanged;
     Nano::Signal<void(float)> OnRestDensityChanged;
     Nano::Signal<void(float)> OnInteractionStrChanged;
+    Nano::Signal<void(float)> OnInteractionRadChanged;
     Nano::Signal<void(UINT)> OnPauseToggled;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleBaseColorChanged;
     Nano::Signal<void(DirectX::XMFLOAT4)> OnParticleGlowColorChanged;

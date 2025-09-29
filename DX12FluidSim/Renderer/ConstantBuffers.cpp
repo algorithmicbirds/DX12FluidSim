@@ -122,3 +122,8 @@ void ConstantBuffers::SetUpdatedInteractionStr(float InteractionStr) {
     InteractionConstantCPU.InteractionStrength = InteractionStr;
     UpdateInteractionParams();
 }
+
+void ConstantBuffers::SetUpdatedInteractionRad(float InteractionRad) {
+    InteractionConstantCPU.InteractionRad = InteractionRad;
+    UpdateInteractionParams();
+}

@@ -89,6 +89,7 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     static float restDensity = SimInitials::RestDensity;
     static float StiffnessConstant = SimInitials::StiffnessConstant;
     static float InteractionStrength = SimInitials::InteractionStr;
+    static float InteractionRadius = SimInitials::InteractionRadius;
     static UINT pause = SimInitials::Pause;
     static ImVec4 ParticleBaseColor = {
         SimInitials::PariticleBaseColor.x,
@@ -119,9 +120,13 @@ void UI::RenderUI(ID3D12GraphicsCommandList7 *CmdList)
     {
         OnCollisionDampingChanged.fire(collisionDamping);
     }
-    if (ImGui::SliderFloat("InteractionStr", &InteractionStrength, 0.0f, 10.0f))
+    if (ImGui::SliderFloat("InteractionStrength", &InteractionStrength, 0.0f, 10.0f))
     {
         OnInteractionStrChanged.fire(InteractionStrength);
+    }
+    if (ImGui::SliderFloat("InteractionRadius", &InteractionRadius, 0.0f, 3.0f))
+    {
+        OnInteractionRadChanged.fire(InteractionRadius);
     }
     if (ImGui::SliderFloat("StiffnessConstant", &StiffnessConstant, 0.0f, 100.0f))
     {

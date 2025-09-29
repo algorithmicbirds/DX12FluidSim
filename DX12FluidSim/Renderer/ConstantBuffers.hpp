@@ -48,6 +48,7 @@ struct InteractionConstants
     UINT LeftMBDown;
     UINT RightMBDown;
     float InteractionStrength = SimInitials::InteractionStr;
+    float InteractionRad = SimInitials::InteractionRadius;
 };
 
 struct ComputeSimParamsConstants
@@ -110,6 +111,7 @@ public:
     void OnMouseRBDown(UINT LBDown);
     void OnMouseMove(DirectX::XMFLOAT2 MousePos);
     void SetUpdatedInteractionStr(float InteractionStr);
+    void SetUpdatedInteractionRad(float InteractionRad);
     void UpdateInteractionParams() { InteractionCB.Update(InteractionConstantCPU); }
 
 public:
